@@ -1,0 +1,6 @@
+-r base.txt
+django-extensions
+ipython
+ruff
+pytest
+pytest-django

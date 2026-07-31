@@ -1,0 +1,34 @@
+# Proxy reverso (HTTP :80). Em produção o TLS é terminado pelo Cloudflare Tunnel,
+# então aqui NÃO configuramos HTTPS. Roteia tudo sob uma única origem:
+#   /admin/*        → painel interno (Next.js, basePath /admin)
+#   /api/*          → backend Django (DRF)
+#   /media/*        → arquivos de mídia do backend (imagens de produto/branding)
+#   /django-admin/* → Django admin (opcional)
+#   /               → storefront (loja)
+:80 {
+	# API do backend
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Mídia (uploads) e static do backend
+	handle /media/* {
+		reverse_proxy backend:8000
+	}
+	handle /django-static/* {
+		reverse_proxy backend:8000
+	}
+	handle /django-admin/* {
+		reverse_proxy backend:8000
+	}
+
+	# Painel interno em /admin (Next basePath já resolve os assets sob /admin)
+	handle /admin* {
+		reverse_proxy admin:3001
+	}
+
+	# Storefront (loja) — tudo o mais
+	handle {
+		reverse_proxy storefront:3000
+	}
+}

@@ -1,0 +1,12 @@
+Django~=5.1
+djangorestframework
+djangorestframework-simplejwt
+drf-spectacular
+django-cors-headers
+django-environ
+django-filter
+psycopg[binary]
+celery
+redis
+Pillow
+gunicorn
