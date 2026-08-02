@@ -7,6 +7,7 @@
  * Os decimais da API chegam como string; a conversão para número fica nas views.
  */
 import { ENDPOINTS } from "./endpoints";
+import { resolveImagem } from "./format";
 import { MOCK_PRODUTOS } from "./mocks";
 import type {
   Cliente,
@@ -201,9 +202,8 @@ export async function buscarProdutoPorSlug(
 }
 
 /**
- * Lista produtos já com dados de card (imagem + preço da 1ª variação).
- * Faz N+1 requests (detalhe por slug) — aceitável para catálogo pequeno; para
- * catálogos grandes, expor um serializer de listagem com esses campos no backend.
+ * Lista produtos já com dados de card (capa + preço da variação em destaque).
+ * Os campos vêm prontos do serializer de listagem — um request só, sem N+1.
  * Os filtros cor/tamanho/preço são aplicados no backend (catalog.filters).
  */
 export async function listarProdutosParaVitrine(
@@ -214,44 +214,22 @@ export async function listarProdutosParaVitrine(
 }> {
   const { produtos, usouMock } = await listarProdutos(filtros);
 
-  const detalhes = await Promise.all(
-    produtos.map(async (p) => {
-      if (usouMock) {
-        return MOCK_PRODUTOS.find((m) => m.slug === p.slug) ?? null;
-      }
-      const { produto } = await buscarProdutoPorSlug(p.slug);
-      return produto;
-    }),
-  );
-
-  const cards = detalhes
-    .filter((p): p is Produto => Boolean(p))
-    .map((p) => {
-      const v = p.variacoes.find((x) => x.ativo) ?? p.variacoes[0];
-      const img = v?.imagens?.[0];
-      return {
-        slug: p.slug,
-        nome: p.nome,
-        imagem: img
-          ? resolveImagemFromParts(img.imagem, img.url_externa)
-          : null,
-        preco: v?.preco ?? null,
-        promocional: v?.preco_promocional ?? null,
-        tipoOrigem: p.tipo_origem,
-      };
-    });
+  const cards = produtos.map((p) => ({
+    slug: p.slug,
+    nome: p.nome,
+    imagem: resolveImagem(p.imagem_principal),
+    preco: p.preco_original ?? p.preco_minimo,
+    promocional: p.preco_promocional,
+    tipoOrigem: p.tipo_origem,
+    tamanhos: p.tamanhos,
+    totalVariacoes: p.total_variacoes,
+    variacaoId: p.variacao_destaque?.id ?? null,
+    sku: p.variacao_destaque?.sku,
+    cor: p.variacao_destaque?.cor,
+    tamanho: p.variacao_destaque?.tamanho,
+  }));
 
   return { cards, usouMock };
-}
-
-function resolveImagemFromParts(
-  caminho: string | null,
-  urlExterna: string | null,
-): string | null {
-  if (urlExterna) return urlExterna;
-  if (!caminho) return null;
-  if (caminho.startsWith("http")) return caminho;
-  return `${API_URL}${caminho.startsWith("/") ? "" : "/"}${caminho}`;
 }
 
 export async function listarCategorias() {
@@ -267,13 +245,32 @@ export async function listarCategorias() {
 }
 
 function toResumo(p: Produto): ProdutoResumo {
+  const variacao = p.variacoes.find((v) => v.ativo) ?? p.variacoes[0];
+  const imagem = variacao?.imagens?.[0];
   return {
     id: p.id,
     nome: p.nome,
     slug: p.slug,
     categoria: p.categoria,
+    categoria_nome: "",
     tipo_origem: p.tipo_origem,
     ativo: p.ativo,
+    imagem_principal: imagem?.url_externa || imagem?.imagem || null,
+    preco_minimo: variacao?.preco_vigente ?? null,
+    preco_original: variacao?.preco ?? null,
+    preco_promocional: variacao?.preco_promocional ?? null,
+    total_variacoes: p.variacoes.length,
+    tamanhos: Array.from(
+      new Set(p.variacoes.map((v) => v.tamanho).filter(Boolean)),
+    ).sort(),
+    variacao_destaque: variacao
+      ? {
+          id: variacao.id,
+          sku: variacao.sku,
+          cor: variacao.cor,
+          tamanho: variacao.tamanho,
+        }
+      : null,
   };
 }
 
@@ -425,4 +422,14 @@ export async function sincronizarCarrinho(
     atual = await adicionarItem(atual.id, linha.variacaoId, linha.quantidade);
   }
   return atual;
+}
+
+/**
+ * Fecha o carrinho: o pedido passa a aguardar pagamento e ganha um número.
+ * A negociação de entrega e pagamento segue no WhatsApp da loja.
+ */
+export function finalizarPedido(pedidoId: string): Promise<Pedido> {
+  return apiFetch<Pedido>(`/api/pedidos/${pedidoId}/finalizar/`, {
+    method: "POST",
+  });
 }

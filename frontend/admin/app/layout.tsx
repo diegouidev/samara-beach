@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { getBranding, brandingToCssVars } from "@/lib/branding";
+
+// A fonte é auto-hospedada pelo Next (sem request ao Google em runtime).
+// `variable` alimenta o --fonte-painel usado no tailwind.config.
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--fonte-painel",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
@@ -20,11 +29,11 @@ export default async function RootLayout({
   const cssVars = brandingToCssVars(branding);
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" className={inter.variable}>
       <head>
         <style dangerouslySetInnerHTML={{ __html: `:root{${cssVars}}` }} />
       </head>
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen font-sans antialiased">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

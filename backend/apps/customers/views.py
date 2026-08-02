@@ -1,10 +1,20 @@
-from rest_framework import mixins, permissions, status, viewsets
+from django.db.models import Count, Q, Sum
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import mixins, permissions, viewsets
+from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import PapelInterno
+from apps.common.permissions import HasInternalRole
+from apps.orders.models import StatusPedido
+from apps.suppliers.services import consultar_cep
+
 from .models import Cliente, Endereco
 from .serializers import (
+    ClienteAdminSerializer,
+    ClienteBalcaoSerializer,
     ClienteSerializer,
     EnderecoSerializer,
     RegistroClienteSerializer,
@@ -40,6 +50,70 @@ class MeuPerfilView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class ClienteAdminViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """
+    Base de clientes no painel interno.
+
+    Restrito a atendimento/admin: é dado pessoal, não entra em estoque/financeiro.
+    O POST atende o cadastro rápido do balcão — cria o cliente sem usuário,
+    só com nome e contato (ver `Cliente.usuario`, que é opcional).
+    """
+
+    permission_classes = [HasInternalRole]
+    required_roles = [PapelInterno.ATENDIMENTO]
+    search_fields = ["nome", "cpf", "telefone", "usuario__email"]
+    ordering_fields = ["nome", "created_at"]
+    ordering = ["nome"]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update"):
+            return ClienteBalcaoSerializer
+        return ClienteAdminSerializer
+
+    @extend_schema(
+        parameters=[OpenApiParameter("cep", str, description="Só números ou com hífen")]
+    )
+    @action(detail=False, methods=["get"], url_path="consultar-cep")
+    def consultar_cep(self, request):
+        """
+        GET /api/clientes/consultar-cep/?cep=01311000
+
+        Preenche o endereço no cadastro. Reaproveita a integração com a
+        BrasilAPI já usada na consulta de CNPJ dos fornecedores.
+        """
+        return Response(consultar_cep(request.query_params.get("cep", "")))
+
+    def get_queryset(self):
+        return (
+            Cliente.objects.select_related("usuario")
+            .prefetch_related("enderecos")
+            .annotate(
+                total_pedidos=Count(
+                    "pedidos",
+                    filter=~Q(pedidos__status=StatusPedido.CARRINHO),
+                    distinct=True,
+                ),
+                total_gasto=Sum(
+                    "pedidos__total",
+                    filter=Q(
+                        pedidos__status__in=[
+                            StatusPedido.PAGO,
+                            StatusPedido.EM_SEPARACAO,
+                            StatusPedido.ENVIADO,
+                            StatusPedido.ENTREGUE,
+                        ]
+                    ),
+                ),
+            )
+        )
 
 
 class EnderecoViewSet(viewsets.ModelViewSet):

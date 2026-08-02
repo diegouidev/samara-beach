@@ -44,6 +44,7 @@ export function CartView() {
                   alt={item.produtoNome}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               )}
             </div>

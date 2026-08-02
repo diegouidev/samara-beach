@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
-import { Badge, Button, Card, Field, PageHeader, inputClass } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Field, PageHeader, inputClass } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { formatBRL, formatData } from "@/lib/format";
 import type { Cupom } from "@/lib/types";
@@ -56,47 +56,47 @@ function CuponsContent() {
         </Card>
       )}
 
-      <Card className="p-0">
+      <Card bare>
         {carregando ? (
-          <p className="p-6 text-sm text-slate-400">Carregando…</p>
+          <EmptyState titulo={"Carregando…"} />
         ) : cupons.length === 0 ? (
-          <p className="p-6 text-sm text-slate-400">Nenhum cupom cadastrado.</p>
+          <EmptyState titulo={"Nenhum cupom cadastrado."} />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-panel-border text-left text-slate-500">
+          <table className="tabela">
+            <thead>
               <tr>
-                <th className="px-5 py-3">Código</th>
-                <th className="px-5 py-3">Tipo</th>
-                <th className="px-5 py-3">Valor</th>
-                <th className="px-5 py-3">Validade</th>
-                <th className="px-5 py-3">Usos</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3"></th>
+                <th>Código</th>
+                <th>Tipo</th>
+                <th>Valor</th>
+                <th>Validade</th>
+                <th>Usos</th>
+                <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {cupons.map((c) => (
-                <tr key={c.id} className="border-b border-panel-border last:border-0">
-                  <td className="px-5 py-3 font-mono font-medium">{c.codigo}</td>
-                  <td className="px-5 py-3 capitalize">{c.tipo}</td>
-                  <td className="px-5 py-3">
+                <tr key={c.id}>
+                  <td className="font-mono font-medium">{c.codigo}</td>
+                  <td className="capitalize">{c.tipo}</td>
+                  <td>
                     {c.tipo === "percentual"
                       ? `${c.valor}%`
                       : formatBRL(c.valor)}
                   </td>
-                  <td className="px-5 py-3">
+                  <td>
                     {c.validade ? formatData(c.validade) : "—"}
                   </td>
-                  <td className="px-5 py-3">
+                  <td>
                     {c.usos}
                     {c.uso_maximo ? ` / ${c.uso_maximo}` : ""}
                   </td>
-                  <td className="px-5 py-3">
+                  <td>
                     <Badge tone={c.ativo ? "green" : "red"}>
                       {c.ativo ? "Ativo" : "Inativo"}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3 text-right">
+                  <td className="text-right">
                     <button
                       onClick={() => alternarAtivo(c)}
                       className="text-panel-accent hover:underline"

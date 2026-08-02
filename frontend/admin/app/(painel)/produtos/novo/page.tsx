@@ -26,7 +26,10 @@ function NovoConteudo() {
 
   return (
     <div>
-      <PageHeader title="Novo produto" subtitle="Cadastre um produto no catálogo" />
+      <PageHeader
+        title="Novo produto"
+        subtitle="Passo 1 de 2: dados básicos. Em seguida você cadastra tamanhos, preços e fotos."
+      />
       <Card>
         <ProdutoForm
           categorias={categorias}

@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { Button, Field, inputClass } from "@/components/ui";
+import { slugify } from "@/lib/masks";
+import { Button, Field, inputClass, textareaClass } from "@/components/ui";
 import type { Categoria, Produto } from "@/lib/types";
 
 export interface ProdutoFormValues {
@@ -10,16 +12,8 @@ export interface ProdutoFormValues {
   descricao: string;
   categoria: string;
   tipo_origem: "producao_propria" | "revenda";
+  tags: string[];
   ativo: boolean;
-}
-
-function slugify(v: string) {
-  return v
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 export function ProdutoForm({
@@ -37,10 +31,12 @@ export function ProdutoForm({
     nome: inicial?.nome ?? "",
     slug: inicial?.slug ?? "",
     descricao: inicial?.descricao ?? "",
-    categoria: inicial?.categoria ?? categorias[0]?.id ?? "",
+    categoria: inicial?.categoria ?? "",
     tipo_origem: inicial?.tipo_origem ?? "producao_propria",
+    tags: inicial?.tags ?? [],
     ativo: inicial?.ativo ?? true,
   });
+  const [tagNova, setTagNova] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -51,9 +47,21 @@ export function ProdutoForm({
     setValues((prev) => ({ ...prev, [k]: v }));
   }
 
+  function adicionarTag() {
+    const tag = tagNova.trim();
+    if (tag && !values.tags.includes(tag)) set("tags", [...values.tags, tag]);
+    setTagNova("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
+
+    if (!values.categoria) {
+      setErro("Escolha uma categoria.");
+      return;
+    }
+
     setEnviando(true);
     try {
       await onSubmit(values);
@@ -62,6 +70,19 @@ export function ProdutoForm({
     } finally {
       setEnviando(false);
     }
+  }
+
+  // Sem categoria cadastrada não dá para criar produto (a API exige o vínculo).
+  if (categorias.length === 0) {
+    return (
+      <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        Nenhuma categoria cadastrada ainda. Crie uma em{" "}
+        <Link href="/categorias" className="font-medium underline">
+          Categorias
+        </Link>{" "}
+        antes de cadastrar produtos.
+      </div>
+    );
   }
 
   return (
@@ -73,13 +94,15 @@ export function ProdutoForm({
           onChange={(e) => {
             const nome = e.target.value;
             set("nome", nome);
+            // Na edição a URL é preservada para não quebrar links já publicados.
             if (!inicial) set("slug", slugify(nome));
           }}
+          placeholder="Biquíni Lua Cheia"
           required
         />
       </Field>
 
-      <Field label="Slug (URL)">
+      <Field label="Slug (URL na loja)">
         <input
           className={inputClass}
           value={values.slug}
@@ -90,10 +113,11 @@ export function ProdutoForm({
 
       <Field label="Descrição">
         <textarea
-          className={inputClass}
+          className={textareaClass}
           rows={4}
           value={values.descricao}
           onChange={(e) => set("descricao", e.target.value)}
+          placeholder="Tecido, caimento, cuidados de lavagem…"
         />
       </Field>
 
@@ -105,6 +129,7 @@ export function ProdutoForm({
             onChange={(e) => set("categoria", e.target.value)}
             required
           >
+            <option value="">— selecione</option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nome}
@@ -129,6 +154,48 @@ export function ProdutoForm({
           </select>
         </Field>
       </div>
+
+      <Field label="Tags (busca e vitrines)">
+        <div className="flex flex-wrap gap-2">
+          {values.tags.map((tag) => (
+            <span
+              key={tag}
+              className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() =>
+                  set(
+                    "tags",
+                    values.tags.filter((t) => t !== tag),
+                  )
+                }
+                className="text-slate-400 hover:text-red-500"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="mt-2 flex gap-2">
+          <input
+            className={inputClass}
+            value={tagNova}
+            onChange={(e) => setTagNova(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                adicionarTag();
+              }
+            }}
+            placeholder="verão, lançamento…"
+          />
+          <Button variant="outline" onClick={adicionarTag}>
+            Incluir
+          </Button>
+        </div>
+      </Field>
 
       <label className="flex items-center gap-2 text-sm">
         <input

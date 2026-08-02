@@ -47,6 +47,13 @@ class Branding(TimeStampedModel):
     logo = models.ImageField(upload_to="branding/", null=True, blank=True)
     favicon = models.ImageField(upload_to="branding/", null=True, blank=True)
 
+    # Canal de fechamento da loja online: o checkout leva a conversa para cá.
+    whatsapp = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text=_("Número com DDI e DDD, ex.: 5511999998888."),
+    )
+
     class Meta:
         verbose_name = _("identidade visual")
         verbose_name_plural = _("identidade visual")

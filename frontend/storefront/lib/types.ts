@@ -56,14 +56,33 @@ export interface Produto {
   updated_at?: string;
 }
 
-/** Produto na listagem (versão enxuta, sem variações). */
+/**
+ * Produto na listagem: sem as variações completas, mas já com o resumo que a
+ * vitrine precisa (capa, faixa de preço e tamanhos) — evita um request por card.
+ */
 export interface ProdutoResumo {
   id: string;
   nome: string;
   slug: string;
   categoria: string;
+  categoria_nome: string;
   tipo_origem: TipoOrigem;
   ativo: boolean;
+  imagem_principal: string | null;
+  /** Preço em exibição (já considera promoção). */
+  preco_minimo: string | null;
+  /** Preço cheio da mesma variação — usado para o "de/por". */
+  preco_original: string | null;
+  preco_promocional: string | null;
+  total_variacoes: number;
+  tamanhos: string[];
+  /** SKU exibido no card — permite comprar sem abrir o produto. */
+  variacao_destaque: {
+    id: string;
+    sku: string;
+    cor: string;
+    tamanho: string;
+  } | null;
 }
 
 export interface TabelaMedidas {

@@ -17,6 +17,17 @@ class MetodoPagamento(models.TextChoices):
     PIX = "pix", _("Pix")
     CARTAO = "cartao", _("Cartão")
     BOLETO = "boleto", _("Boleto")
+    # Formas usadas no balcão (PDV).
+    DINHEIRO = "dinheiro", _("Dinheiro")
+    DEBITO = "debito", _("Cartão de débito")
+    CREDITO = "credito", _("Cartão de crédito")
+    # Crédito gerado por uma devolução, abatido em uma troca. Não é dinheiro
+    # entrando: nunca conta como espécie na gaveta.
+    CREDITO_TROCA = "credito_troca", _("Crédito de troca")
+
+
+#: Só o dinheiro fica na gaveta — é o que se confere no fechamento do caixa.
+METODOS_EM_ESPECIE = {MetodoPagamento.DINHEIRO}
 
 
 class Pagamento(BaseModel):
@@ -27,7 +38,7 @@ class Pagamento(BaseModel):
     )
     gateway = models.CharField(max_length=40, blank=True)  # ex: mercadopago, pagarme
     metodo = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=MetodoPagamento.choices,
         blank=True,
     )
@@ -37,6 +48,15 @@ class Pagamento(BaseModel):
         default=StatusPagamento.PENDENTE,
     )
     valor = models.DecimalField(max_digits=12, decimal_places=2)
+    # Crédito parcelado no balcão (1 = à vista).
+    parcelas = models.PositiveSmallIntegerField(default=1)
+    # Só em dinheiro: quanto a cliente entregou e quanto voltou de troco.
+    valor_recebido = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    troco = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
     referencia_externa = models.CharField(max_length=120, blank=True, db_index=True)
     payload_webhook = models.JSONField(default=dict, blank=True)
 

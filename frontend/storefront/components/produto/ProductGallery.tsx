@@ -29,6 +29,7 @@ export function ProductGallery({ imagens }: { imagens: GalleryImage[] }) {
           sizes="(max-width: 768px) 100vw, 50vw"
           className="object-cover"
           priority
+          unoptimized
         />
       </div>
       {imagens.length > 1 && (
@@ -41,7 +42,13 @@ export function ProductGallery({ imagens }: { imagens: GalleryImage[] }) {
                 i === ativa ? "border-brand-sea" : "border-transparent"
               }`}
             >
-              <Image src={img.src} alt={img.alt} fill className="object-cover" />
+              <Image
+                src={img.src}
+                alt={img.alt}
+                fill
+                className="object-cover"
+                unoptimized
+              />
             </button>
           ))}
         </div>

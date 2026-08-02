@@ -11,3 +11,21 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
+
+/* Contador do carrinho: pulso curto a cada mudança de quantidade, para o
+   cliente perceber que o item entrou sem precisar olhar o carrinho. */
+@keyframes pulso-badge {
+  0% {
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pulso-badge {
+  animation: pulso-badge 0.3s ease-out;
+}

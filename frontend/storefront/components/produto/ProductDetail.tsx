@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProductGallery } from "./ProductGallery";
 import { SizeTable } from "./SizeTable";
@@ -43,17 +44,54 @@ export function ProductDetail({
     [variacoesAtivas],
   );
 
-  const [cor, setCor] = useState(cores[0] ?? "");
-  const [tamanho, setTamanho] = useState(tamanhos[0] ?? "");
+  /** Tamanhos que existem de fato na cor informada. */
+  const tamanhosDaCor = useCallback(
+    (c: string) =>
+      variacoesAtivas.filter((v) => v.cor === c).map((v) => v.tamanho),
+    [variacoesAtivas],
+  );
+
+  const corInicial = cores[0] ?? "";
+  const [cor, setCor] = useState(corInicial);
+  const [tamanho, setTamanho] = useState(
+    () => tamanhosDaCor(corInicial)[0] ?? "",
+  );
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Variação selecionada (por cor+tamanho), com fallback para a primeira ativa.
-  const variacao =
-    variacoesAtivas.find((v) => v.cor === cor && v.tamanho === tamanho) ??
-    variacoesAtivas.find((v) => v.cor === cor) ??
-    variacoesAtivas[0];
+  /**
+   * Ao trocar de cor, o tamanho selecionado pode não existir nela (ex.: preto
+   * só no M, vermelho só no G). Nesse caso cai para o primeiro tamanho
+   * disponível — nunca se mantém uma combinação inexistente.
+   */
+  function escolherCor(nova: string) {
+    setCor(nova);
+    const disponiveis = tamanhosDaCor(nova);
+    if (!disponiveis.includes(tamanho)) {
+      setTamanho(disponiveis[0] ?? "");
+    }
+  }
 
-  const imagens = variacao ? imagensDaVariacao(variacao) : [];
+  // Sem fallback: a variação é exatamente a combinação escolhida ou nenhuma.
+  const variacao = variacoesAtivas.find(
+    (v) => v.cor === cor && v.tamanho === tamanho,
+  );
+
+  const disponiveisNaCor = tamanhosDaCor(cor);
+
+  // A variação escolhida pode não ter foto própria; usa a da mesma cor e,
+  // em último caso, qualquer foto do produto — em vez de exibir vazio.
+  const imagens = useMemo(() => {
+    const candidatas = [
+      ...(variacao ? [variacao] : []),
+      ...variacoesAtivas.filter((v) => v.cor === cor),
+      ...variacoesAtivas,
+    ];
+    for (const v of candidatas) {
+      const imgs = imagensDaVariacao(v);
+      if (imgs.length > 0) return imgs;
+    }
+    return [];
+  }, [variacao, variacoesAtivas, cor]);
 
   function handleAdicionar() {
     if (!variacao) return;
@@ -68,8 +106,10 @@ export function ProductDetail({
       imagem: imagens[0]?.src ?? null,
       quantidade: 1,
     });
-    setFeedback("Adicionado ao carrinho!");
-    setTimeout(() => setFeedback(null), 2500);
+    setFeedback(
+      `${produto.nome}${variacao.tamanho ? ` (${variacao.tamanho})` : ""} adicionado ao carrinho`,
+    );
+    setTimeout(() => setFeedback(null), 4000);
   }
 
   return (
@@ -107,7 +147,7 @@ export function ProductDetail({
               {cores.map((c) => (
                 <button
                   key={c}
-                  onClick={() => setCor(c)}
+                  onClick={() => escolherCor(c)}
                   className={`rounded-full border px-4 py-1.5 text-sm ${
                     c === cor
                       ? "border-brand-sea bg-brand-sea text-white"
@@ -125,20 +165,39 @@ export function ProductDetail({
           <div className="mt-4">
             <p className="text-sm font-medium text-brand-ink">Tamanho</p>
             <div className="mt-2 flex flex-wrap gap-2">
-              {tamanhos.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTamanho(t)}
-                  className={`rounded-lg border px-4 py-1.5 text-sm ${
-                    t === tamanho
-                      ? "border-brand-sea bg-brand-sea text-white"
-                      : "border-gray-300 text-gray-700 hover:border-brand-sea"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+              {tamanhos.map((t) => {
+                // Tamanho que não existe na cor escolhida fica visível, porém
+                // desabilitado — o cliente vê a grade completa sem conseguir
+                // selecionar uma combinação que não está à venda.
+                const indisponivel = !disponiveisNaCor.includes(t);
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTamanho(t)}
+                    disabled={indisponivel}
+                    title={
+                      indisponivel
+                        ? `Tamanho ${t} indisponível${cor ? ` na cor ${cor}` : ""}`
+                        : undefined
+                    }
+                    className={`rounded-lg border px-4 py-1.5 text-sm ${
+                      indisponivel
+                        ? "cursor-not-allowed border-gray-200 text-gray-300 line-through"
+                        : t === tamanho
+                          ? "border-brand-sea bg-brand-sea text-white"
+                          : "border-gray-300 text-gray-700 hover:border-brand-sea"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
             </div>
+            {cores.length > 0 && disponiveisNaCor.length < tamanhos.length && (
+              <p className="mt-2 text-xs text-gray-400">
+                Disponível em {cor}: {disponiveisNaCor.join(", ")}
+              </p>
+            )}
           </div>
         )}
 
@@ -162,7 +221,16 @@ export function ProductDetail({
           </button>
         </div>
         {feedback && (
-          <p className="mt-3 text-sm font-medium text-brand-sea">{feedback}</p>
+          <p
+            role="status"
+            className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
+          >
+            <span aria-hidden="true">✓</span>
+            {feedback}
+            <Link href="/carrinho" className="underline hover:no-underline">
+              Ver carrinho
+            </Link>
+          </p>
         )}
 
         {variacao && (

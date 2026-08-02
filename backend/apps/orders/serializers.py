@@ -62,6 +62,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "cliente",
+            "canal",
             "status",
             "cupom",
             "cupom_codigo",
@@ -77,6 +78,7 @@ class PedidoSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "cliente",
+            "canal",
             "status",
             "cupom",
             "cupom_codigo",

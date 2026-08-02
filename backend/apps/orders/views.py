@@ -128,6 +128,24 @@ class PedidoViewSet(viewsets.ModelViewSet):
         services.aplicar_cupom(pedido, serializer.validated_data["codigo"])
         return Response(PedidoSerializer(pedido).data)
 
+    @action(detail=True, methods=["post"], url_path="finalizar")
+    def finalizar(self, request, pk=None):
+        """
+        O cliente fecha o carrinho e o pedido passa a aguardar pagamento.
+
+        A negociação (entrega e pagamento) segue no WhatsApp da loja; o estoque
+        só é baixado quando alguém do time confirmar o pagamento no painel.
+        """
+        pedido = self.get_object()
+        if pedido.status != StatusPedido.CARRINHO:
+            raise ValidationError("Este pedido já foi finalizado.")
+        if not pedido.itens.exists():
+            raise ValidationError("O carrinho está vazio.")
+
+        services.recalcular_totais(pedido)
+        services.mudar_status(pedido, StatusPedido.AGUARDANDO_PAGAMENTO)
+        return Response(PedidoSerializer(pedido).data)
+
     @action(detail=True, methods=["post"], url_path="mudar-status")
     def mudar_status(self, request, pk=None):
         """Transição de status — restrito a interno (atendimento/admin)."""

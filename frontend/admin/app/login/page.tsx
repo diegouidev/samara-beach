@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
-import { Button, Field, inputClass } from "@/components/ui";
+import { getBranding, type Branding } from "@/lib/branding";
+import { resolveImagem } from "@/lib/format";
+import { Alerta, Button, Field, inputClass } from "@/components/ui";
 
 export default function LoginPage() {
   const { usuario, carregando, entrar } = useAuth();
@@ -12,10 +15,17 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [branding, setBranding] = useState<Branding | null>(null);
 
   useEffect(() => {
     if (!carregando && usuario) router.replace("/dashboard");
   }, [carregando, usuario, router]);
+
+  useEffect(() => {
+    getBranding(0)
+      .then(setBranding)
+      .catch(() => setBranding(null));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,44 +41,112 @@ export default function LoginPage() {
     }
   }
 
+  const logo = resolveImagem(branding?.logo ?? null);
+  const nomeLoja = branding?.nome_loja ?? "Samara Beach";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-panel-sidebar px-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
-        <h1 className="text-xl font-bold text-panel-ink">
-          Samara <span className="text-panel-accent">Beach</span>
-        </h1>
-        <p className="mb-6 text-sm text-slate-500">Painel interno de gestão</p>
+    <div className="flex min-h-screen">
+      {/* Painel de marca — some no mobile para dar espaço ao formulário. */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-panel-brandDark p-12 lg:flex">
+        <div
+          className="absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full opacity-20 blur-3xl"
+          style={{ background: "var(--cor-primaria, #0891b2)" }}
+        />
+        <div
+          className="absolute -bottom-32 -right-16 h-[380px] w-[380px] rounded-full opacity-10 blur-3xl"
+          style={{ background: "var(--cor-destaque, #fb7185)" }}
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Field label="E-mail">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={inputClass}
-            />
-          </Field>
-          <Field label="Senha">
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              required
-              className={inputClass}
-            />
-          </Field>
+        <div className="relative">
+          {logo ? (
+            <span className="relative block h-12 w-44">
+              <Image
+                src={logo}
+                alt={nomeLoja}
+                fill
+                sizes="176px"
+                className="object-contain object-left"
+                priority
+                unoptimized
+              />
+            </span>
+          ) : (
+            <p className="text-xl font-semibold text-white">{nomeLoja}</p>
+          )}
+        </div>
 
-          {erro && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {erro}
-            </p>
+        <div className="relative max-w-sm">
+          <h2 className="text-3xl font-semibold leading-tight text-white">
+            Tudo da loja
+            <br />
+            em um lugar só.
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-400">
+            Catálogo, estoque, pedidos da loja online, vendas do balcão e
+            fechamento de caixa — no mesmo painel.
+          </p>
+        </div>
+
+        <p className="relative text-xs text-slate-600">
+          © {new Date().getFullYear()} {nomeLoja}
+        </p>
+      </div>
+
+      {/* Formulário */}
+      <div className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
+        <div className="w-full max-w-sm">
+          {logo && (
+            <span className="relative mb-8 block h-11 w-40 lg:hidden">
+              <Image
+                src={logo}
+                alt={nomeLoja}
+                fill
+                sizes="160px"
+                className="object-contain object-left"
+                unoptimized
+              />
+            </span>
           )}
 
-          <Button type="submit" disabled={enviando} className="w-full">
-            {enviando ? "Entrando…" : "Entrar"}
-          </Button>
-        </form>
+          <h1 className="text-2xl font-semibold tracking-tight text-panel-ink">
+            Entrar no painel
+          </h1>
+          <p className="mt-1 text-sm text-panel-inkMuted">
+            Acesso restrito à equipe da loja.
+          </p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            <Field label="E-mail">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                autoComplete="email"
+                placeholder="voce@samarabeach.com"
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Senha">
+              <input
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className={inputClass}
+              />
+            </Field>
+
+            {erro && <Alerta tone="erro">{erro}</Alerta>}
+
+            <Button type="submit" disabled={enviando} className="w-full">
+              {enviando ? "Entrando…" : "Entrar"}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   );
