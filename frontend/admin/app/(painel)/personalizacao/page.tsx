@@ -8,7 +8,7 @@ import {
   type Branding,
 } from "@/lib/branding";
 import { resolveImagem } from "@/lib/format";
-import { Button, Card, Field, PageHeader, inputClass } from "@/components/ui";
+import { Alerta, Button, Card, Field, PageHeader, inputClass } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 
 export default function PersonalizacaoPage() {
@@ -53,6 +53,7 @@ function PersonalizacaoContent() {
     try {
       const form = new FormData();
       form.append("nome_loja", branding.nome_loja);
+      form.append("whatsapp", branding.whatsapp ?? "");
       for (const { chave } of CORES) {
         form.append(chave, String(branding[chave]));
       }
@@ -78,14 +79,10 @@ function PersonalizacaoContent() {
       />
 
       {msg && (
-        <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
-          {msg}
-        </p>
+        <Alerta tone="sucesso">{msg}</Alerta>
       )}
       {erro && (
-        <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
-          {erro}
-        </p>
+        <Alerta tone="erro">{erro}</Alerta>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -97,6 +94,21 @@ function PersonalizacaoContent() {
                 className={inputClass}
                 value={branding.nome_loja}
                 onChange={(e) => set("nome_loja", e.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="WhatsApp da loja"
+              hint="Com DDI e DDD, só números. É para onde o checkout da loja online leva o pedido."
+            >
+              <input
+                className={inputClass}
+                value={branding.whatsapp ?? ""}
+                onChange={(e) =>
+                  set("whatsapp", e.target.value.replace(/\D/g, ""))
+                }
+                placeholder="5511999998888"
+                inputMode="numeric"
               />
             </Field>
 

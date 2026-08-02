@@ -20,6 +20,8 @@ urlpatterns = [
     path("api/", include("apps.suppliers.urls")),
     path("api/", include("apps.customers.urls")),
     path("api/", include("apps.orders.urls")),
+    # Loja física (PDV e caixa)
+    path("api/", include("apps.pos.urls")),
     path("api/", include("apps.reports.urls")),
     path("api/", include("apps.branding.urls")),
     # OpenAPI / docs

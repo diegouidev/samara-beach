@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
-import { Button, Card, PageHeader } from "@/components/ui";
+import { Alerta, Button, Card, PageHeader } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { ProdutoForm } from "@/components/produtos/ProdutoForm";
 import { VariacaoManager } from "@/components/produtos/VariacaoManager";
@@ -58,20 +58,28 @@ function EditarConteudo({ slug }: { slug: string }) {
         title={produto.nome}
         subtitle="Editar produto e variações"
         action={
-          <Button variant="danger" onClick={excluir}>
-            Excluir
-          </Button>
+          <div className="flex gap-2">
+            <a
+              href={`/produtos/${produto.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-panel-accent px-4 py-2 text-sm font-medium text-panel-accent transition hover:bg-cyan-50"
+            >
+              Ver na loja ↗
+            </a>
+            <Button variant="danger" onClick={excluir}>
+              Excluir
+            </Button>
+          </div>
         }
       />
 
       {msg && (
-        <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
-          {msg}
-        </p>
+        <Alerta tone="sucesso">{msg}</Alerta>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
           <h2 className="mb-4 font-semibold text-panel-ink">Dados do produto</h2>
           <ProdutoForm
             categorias={categorias}
@@ -89,8 +97,8 @@ function EditarConteudo({ slug }: { slug: string }) {
           />
         </Card>
 
-        <Card>
-          <VariacaoManager produto={produto} />
+        <Card className="lg:col-span-2">
+          <VariacaoManager key={produto.id} produto={produto} />
         </Card>
       </div>
     </div>

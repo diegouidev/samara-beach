@@ -1,4 +1,6 @@
+from django.db.models import Count, Q
 from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import PapelInterno
@@ -50,7 +52,11 @@ CATALOG_WRITE_ROLES = [PapelInterno.ESTOQUE, PapelInterno.ADMIN]
 
 
 class CategoriaViewSet(viewsets.ModelViewSet):
-    queryset = Categoria.objects.all()
+    queryset = Categoria.objects.select_related("categoria_pai").annotate(
+        total_produtos_anotado=Count(
+            "produtos", filter=Q(produtos__deleted_at__isnull=True), distinct=True
+        )
+    )
     serializer_class = CategoriaSerializer
     permission_classes = [ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
@@ -58,6 +64,16 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     filterset_fields = ["ativo", "categoria_pai"]
     search_fields = ["nome", "slug"]
     ordering_fields = ["nome", "created_at"]
+
+    def perform_destroy(self, instance):
+        # A exclusão é soft; ainda assim, deixar produtos apontando para uma
+        # categoria removida esconderia o catálogo. Melhor barrar e orientar.
+        if instance.produtos.exists():
+            raise ValidationError(
+                "Esta categoria tem produtos vinculados. Mova os produtos para "
+                "outra categoria antes de excluí-la (ou apenas desative-a)."
+            )
+        instance.delete()
 
 
 class ProdutoViewSet(viewsets.ModelViewSet):

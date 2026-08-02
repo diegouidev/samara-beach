@@ -20,6 +20,8 @@ interface AuthContextValue {
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
   sair: () => Promise<void>;
+  /** Rebusca o usuário na API (após editar o próprio perfil, por exemplo). */
+  recarregar: () => Promise<void>;
   /** true se o usuário tem um dos papéis (admin sempre passa). */
   temPapel: (papeis: PapelInterno[]) => boolean;
 }
@@ -74,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ usuario, carregando, entrar, sair, temPapel }}
+      value={{ usuario, carregando, entrar, sair, recarregar: carregar, temPapel }}
     >
       {children}
     </AuthContext.Provider>

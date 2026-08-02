@@ -1,11 +1,13 @@
 from rest_framework import serializers
 
+from apps.common.serializers import RelativeImageField
+
 from .models import Branding
 
 
 class BrandingSerializer(serializers.ModelSerializer):
-    logo = serializers.ImageField(read_only=True)
-    favicon = serializers.ImageField(read_only=True)
+    logo = RelativeImageField(read_only=True)
+    favicon = RelativeImageField(read_only=True)
 
     class Meta:
         model = Branding
@@ -18,6 +20,7 @@ class BrandingSerializer(serializers.ModelSerializer):
             "cor_texto",
             "logo",
             "favicon",
+            "whatsapp",
             "updated_at",
         ]
 
@@ -36,4 +39,5 @@ class BrandingUpdateSerializer(serializers.ModelSerializer):
             "cor_texto",
             "logo",
             "favicon",
+            "whatsapp",
         ]

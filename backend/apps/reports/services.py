@@ -16,7 +16,7 @@ from django.db.models import (
 )
 from django.utils import timezone
 
-from apps.orders.models import ItemPedido, Pedido
+from apps.orders.models import CanalVenda, ItemPedido, Pedido
 from apps.orders.services import STATUS_COM_BAIXA_ESTOQUE
 
 _SUBTOTAL_EXPR = ExpressionWrapper(
@@ -42,15 +42,31 @@ def _pedidos_vendidos(inicio=None, fim=None):
     return qs
 
 
-def dashboard(inicio=None, fim=None) -> dict:
-    pedidos = _pedidos_vendidos(inicio, fim)
-    agg = pedidos.aggregate(
-        num_pedidos=Count("id"),
-        faturamento=Sum("total"),
-    )
+def _totais(pedidos) -> dict:
+    agg = pedidos.aggregate(num_pedidos=Count("id"), faturamento=Sum("total"))
     num = agg["num_pedidos"] or 0
     faturamento = agg["faturamento"] or Decimal("0")
-    ticket_medio = (faturamento / num).quantize(Decimal("0.01")) if num else Decimal("0")
+    return {
+        "num_pedidos": num,
+        "faturamento": faturamento,
+        "ticket_medio": (
+            (faturamento / num).quantize(Decimal("0.01")) if num else Decimal("0")
+        ),
+    }
+
+
+def dashboard(inicio=None, fim=None) -> dict:
+    pedidos = _pedidos_vendidos(inicio, fim)
+    totais = _totais(pedidos)
+    num = totais["num_pedidos"]
+    faturamento = totais["faturamento"]
+    ticket_medio = totais["ticket_medio"]
+
+    # Segmentação por canal: a loja física entra no mesmo funil de vendas.
+    por_canal = {
+        canal: _totais(pedidos.filter(canal=canal))
+        for canal in (CanalVenda.ONLINE, CanalVenda.PRESENCIAL)
+    }
 
     mais_vendidos = (
         ItemPedido.objects.filter(pedido__in=pedidos)
@@ -64,6 +80,7 @@ def dashboard(inicio=None, fim=None) -> dict:
         "num_pedidos": num,
         "faturamento": faturamento,
         "ticket_medio": ticket_medio,
+        "por_canal": por_canal,
         "produtos_mais_vendidos": [
             {
                 "sku": r["variacao__sku"],
@@ -72,6 +89,75 @@ def dashboard(inicio=None, fim=None) -> dict:
                 "receita": r["receita"],
             }
             for r in mais_vendidos
+        ],
+    }
+
+
+def resultado(inicio=None, fim=None) -> dict:
+    """
+    Resultado do período: receita líquida − custo dos produtos − despesas.
+
+    - Receita líquida desconta as devoluções: a peça voltou, o dinheiro saiu.
+    - Custo usa `custo_medio` da variação (mesma base do relatório de margem);
+      SKUs sem custo entram como zero e ficam sinalizados.
+    - Despesas são as contas **efetivamente pagas** no período (regime de caixa),
+      não as lançadas — é o que a loja de fato desembolsou.
+    """
+    from apps.pos.models import Devolucao
+    from apps.suppliers.models import ContaPagar, StatusContaPagar
+
+    pedidos = _pedidos_vendidos(inicio, fim)
+    receita_bruta = pedidos.aggregate(t=Sum("total"))["t"] or Decimal("0")
+
+    custo_expr = ExpressionWrapper(
+        F("quantidade") * F("variacao__custo_medio"),
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+    custo = ItemPedido.objects.filter(pedido__in=pedidos).aggregate(
+        t=Sum(custo_expr)
+    )["t"] or Decimal("0")
+
+    dt_inicio, dt_fim = _range_datetime(inicio, fim)
+    devolucoes = Devolucao.objects.all()
+    if dt_inicio:
+        devolucoes = devolucoes.filter(created_at__gte=dt_inicio)
+    if dt_fim:
+        devolucoes = devolucoes.filter(created_at__lte=dt_fim)
+    total_devolucoes = devolucoes.aggregate(t=Sum("valor_total"))["t"] or Decimal("0")
+
+    despesas_qs = ContaPagar.objects.filter(status=StatusContaPagar.PAGA)
+    if inicio:
+        despesas_qs = despesas_qs.filter(pago_em__gte=inicio)
+    if fim:
+        despesas_qs = despesas_qs.filter(pago_em__lte=fim)
+    total_despesas = despesas_qs.aggregate(t=Sum("valor"))["t"] or Decimal("0")
+
+    receita_liquida = receita_bruta - total_devolucoes
+    lucro_bruto = receita_liquida - custo
+
+    return {
+        "periodo": {"inicio": inicio, "fim": fim},
+        "receita_bruta": receita_bruta,
+        "devolucoes": total_devolucoes,
+        "receita_liquida": receita_liquida,
+        "custo_produtos": custo,
+        "lucro_bruto": lucro_bruto,
+        "despesas": total_despesas,
+        "resultado": lucro_bruto - total_despesas,
+        "margem_percentual": (
+            (lucro_bruto / receita_liquida * 100).quantize(Decimal("0.01"))
+            if receita_liquida
+            else Decimal("0")
+        ),
+        "por_canal": {
+            canal: _totais(pedidos.filter(canal=canal))
+            for canal in (CanalVenda.ONLINE, CanalVenda.PRESENCIAL)
+        },
+        "despesas_por_categoria": [
+            {"categoria": linha["categoria"], "total": linha["total"]}
+            for linha in despesas_qs.values("categoria")
+            .annotate(total=Sum("valor"))
+            .order_by("-total")
         ],
     }
 

@@ -1,4 +1,5 @@
 """Pedidos, itens de pedido e cupons."""
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -42,11 +43,33 @@ class StatusPedido(models.TextChoices):
     CANCELADO = "cancelado", _("Cancelado")
 
 
+class CanalVenda(models.TextChoices):
+    ONLINE = "online", _("Loja online")
+    PRESENCIAL = "presencial", _("Loja física")
+
+
 class Pedido(BaseModel):
+    # Nulo na venda de balcão sem identificação ("consumidor final").
     cliente = models.ForeignKey(
         "customers.Cliente",
         on_delete=models.PROTECT,
         related_name="pedidos",
+        null=True,
+        blank=True,
+    )
+    canal = models.CharField(
+        max_length=12,
+        choices=CanalVenda.choices,
+        default=CanalVenda.ONLINE,
+        db_index=True,
+    )
+    # Quem operou a venda presencial (usuário interno do PDV).
+    vendedor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vendas",
     )
     status = models.CharField(
         max_length=25,
@@ -69,6 +92,10 @@ class Pedido(BaseModel):
     )
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     frete = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Desconto concedido na mão (PDV). Soma ao desconto do cupom em `desconto`.
+    desconto_manual = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0
+    )
     desconto = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 

@@ -44,6 +44,7 @@ LOCAL_APPS = [
     "apps.inventory",
     "apps.customers",
     "apps.orders",
+    "apps.pos",
     "apps.payments",
     "apps.shipping",
     "apps.reports",
@@ -115,7 +116,9 @@ USE_TZ = True
 # /static é usado pelo Next; o static do Django (admin/DRF) vai sob /django-static/.
 STATIC_URL = "django-static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
+# Barra inicial obrigatória: sem ela, as URLs de mídia dos serializers saem
+# relativas ao path da requisição (ex.: /api/media/...) e quebram as imagens.
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -148,8 +151,10 @@ REST_FRAMEWORK = {
 
 # --- SimpleJWT ----------------------------------------------------------
 SIMPLE_JWT = {
+    # 10h cobrem um expediente inteiro: quem abre o caixa de manhã não é
+    # deslogado no meio do dia. O refresh (7 dias) cobre a virada do turno.
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME_MIN", default=30)
+        minutes=env.int("JWT_ACCESS_TOKEN_LIFETIME_MIN", default=600)
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
         days=env.int("JWT_REFRESH_TOKEN_LIFETIME_DAYS", default=7)

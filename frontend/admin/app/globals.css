@@ -2,7 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  color: #1e293b;
-  background: #f8fafc;
+@layer base {
+  html,
+  body {
+    /* Fallback explícito: se a variável da fonte não carregar, cai numa
+       sans-serif do sistema — nunca no serifado padrão do navegador. */
+    font-family: var(--fonte-painel, ui-sans-serif), "Segoe UI", Roboto,
+      system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  body {
+    @apply bg-panel-bg text-panel-ink antialiased;
+  }
+
+  /* Números alinhados em colunas de valores (tabelas, totais). */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Barra de rolagem discreta — listas e áreas com overflow. */
+  .rolagem-fina {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(148 163 184 / 0.35) transparent;
+  }
+  .rolagem-fina::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .rolagem-fina::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .rolagem-fina::-webkit-scrollbar-thumb {
+    background-color: rgb(148 163 184 / 0.3);
+    border-radius: 999px;
+  }
+  .rolagem-fina::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(148 163 184 / 0.55);
+  }
+
+}
+
+@layer components {
+  /*
+   * Tabela padrão do painel: cabeçalho discreto em caixa alta, separador
+   * suave entre linhas e realce no hover. As páginas só aplicam `.tabela`.
+   */
+  .tabela {
+    @apply w-full border-collapse text-sm;
+  }
+  .tabela thead th {
+    @apply whitespace-nowrap border-b border-panel-border bg-panel-surfaceMuted
+      px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider
+      text-panel-inkMuted;
+  }
+  .tabela tbody td {
+    @apply border-b border-panel-border px-5 py-3.5 align-middle text-panel-inkSoft;
+  }
+  .tabela tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .tabela tbody tr {
+    @apply transition-colors;
+  }
+  .tabela tbody tr:hover {
+    @apply bg-panel-surfaceMuted;
+  }
+}
+
+/* Impressão (recibo do PDV): sem o fundo do painel. */
+@media print {
+  body {
+    background: #fff;
+  }
 }

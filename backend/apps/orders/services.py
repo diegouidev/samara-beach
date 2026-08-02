@@ -41,7 +41,11 @@ def recalcular_totais(pedido: Pedido) -> Pedido:
         )
     )
     subtotal = agg["subtotal"] or Decimal("0")
-    desconto = calcular_desconto(pedido.cupom, subtotal)
+    # O desconto do cupom e o concedido na mão (PDV) somam, sem passar do subtotal.
+    desconto_cupom = calcular_desconto(pedido.cupom, subtotal)
+    desconto = min(
+        desconto_cupom + (pedido.desconto_manual or Decimal("0")), subtotal
+    )
     pedido.subtotal = subtotal
     pedido.desconto = desconto
     pedido.total = subtotal - desconto + (pedido.frete or Decimal("0"))

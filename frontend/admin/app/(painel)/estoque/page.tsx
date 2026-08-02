@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
-import { Badge, Button, Card, Field, PageHeader, inputClass } from "@/components/ui";
+import { Alerta, Badge, Button, Card, Field, PageHeader, inputClass } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { formatData } from "@/lib/format";
 import type {
@@ -52,9 +52,7 @@ function EstoqueContent() {
       <PageHeader title="Estoque" subtitle="Movimentações e alertas de saldo" />
 
       {msg && (
-        <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
-          {msg}
-        </p>
+        <Alerta tone="sucesso">{msg}</Alerta>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -100,24 +98,24 @@ function EstoqueContent() {
         {movs.length === 0 ? (
           <p className="text-sm text-slate-400">Sem movimentações.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="text-left text-slate-500">
+          <table className="tabela">
+            <thead>
               <tr>
-                <th className="py-2">Data</th>
-                <th className="py-2">Tipo</th>
-                <th className="py-2">Origem</th>
-                <th className="py-2 text-right">Qtd</th>
-                <th className="py-2 text-right">Saldo</th>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Origem</th>
+                <th className="text-right">Qtd</th>
+                <th className="text-right">Saldo</th>
               </tr>
             </thead>
             <tbody>
               {movs.map((m) => (
                 <tr key={m.id} className="border-t border-panel-border">
-                  <td className="py-2">{formatData(m.created_at)}</td>
-                  <td className="py-2 capitalize">{m.tipo}</td>
-                  <td className="py-2 capitalize">{m.origem}</td>
-                  <td className="py-2 text-right">{m.quantidade}</td>
-                  <td className="py-2 text-right font-medium">
+                  <td>{formatData(m.created_at)}</td>
+                  <td className="capitalize">{m.tipo}</td>
+                  <td className="capitalize">{m.origem}</td>
+                  <td className="text-right">{m.quantidade}</td>
+                  <td className="text-right font-medium">
                     {m.saldo_resultante}
                   </td>
                 </tr>

@@ -9,6 +9,8 @@ export interface Branding {
   cor_texto: string;
   logo: string | null;
   favicon: string | null;
+  /** Número com DDI+DDD usado no checkout e no botão flutuante. */
+  whatsapp: string;
   updated_at?: string;
 }
 
@@ -21,6 +23,7 @@ export const BRANDING_FALLBACK: Branding = {
   cor_texto: "#1f2937",
   logo: null,
   favicon: null,
+  whatsapp: "",
 };
 
 export async function getBranding(revalidate = 60): Promise<Branding> {
