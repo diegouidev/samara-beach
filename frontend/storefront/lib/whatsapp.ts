@@ -7,6 +7,24 @@ export function linkWhatsApp(numero: string, mensagem: string): string {
   return `https://wa.me/${limpo}?text=${encodeURIComponent(mensagem)}`;
 }
 
+/** Mensagem para o cliente falar sobre um pedido já existente (tela "Meus pedidos"). */
+export function mensagemContatoPedido({
+  pedidoId,
+  total,
+  nomeLoja,
+}: {
+  pedidoId: string;
+  total: number;
+  nomeLoja: string;
+}): string {
+  return [
+    `Olá, ${nomeLoja}! Gostaria de falar sobre o meu pedido.`,
+    "",
+    `*Pedido:* #${pedidoId.slice(0, 8).toUpperCase()}`,
+    `*Total:* ${formatBRL(total)}`,
+  ].join("\n");
+}
+
 /**
  * Mensagem do pedido: número curto, itens e total.
  *

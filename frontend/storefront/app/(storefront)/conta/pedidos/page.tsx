@@ -11,7 +11,17 @@ import {
   type NovoEndereco,
 } from "@/lib/api";
 import { formatBRL } from "@/lib/format";
+import { getBranding } from "@/lib/branding";
+import { linkWhatsApp, mensagemContatoPedido } from "@/lib/whatsapp";
 import type { Endereco, Pedido } from "@/lib/types";
+
+function IconeWhatsApp({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M17.5 14.4c-.3-.15-1.7-.85-2-.95-.26-.1-.46-.15-.65.15-.2.3-.75.95-.92 1.15-.17.2-.34.22-.63.07-.3-.15-1.24-.46-2.36-1.46-.87-.78-1.46-1.73-1.63-2.03-.17-.3-.02-.46.13-.6.13-.13.3-.34.44-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.65-1.56-.9-2.14-.24-.56-.48-.48-.65-.49h-.56c-.2 0-.5.07-.77.37-.26.3-1 1-1 2.42s1.03 2.8 1.17 3c.15.2 2.03 3.1 4.92 4.35.69.3 1.22.47 1.64.6.69.22 1.32.19 1.82.12.55-.08 1.7-.7 1.94-1.36.24-.67.24-1.24.17-1.36-.07-.12-.26-.2-.56-.35zM12 2a10 10 0 0 0-8.6 15.05L2 22l5.05-1.32A10 10 0 1 0 12 2z" />
+    </svg>
+  );
+}
 
 const STATUS_LABEL: Record<string, string> = {
   carrinho: "Carrinho",
@@ -30,10 +40,21 @@ export default function PedidosPage() {
   const [carregandoDados, setCarregandoDados] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [whatsapp, setWhatsapp] = useState("");
+  const [nomeLoja, setNomeLoja] = useState("Samara Beach");
 
   async function recarregarEnderecos() {
     setEnderecos(await listarEnderecos());
   }
+
+  useEffect(() => {
+    getBranding(0)
+      .then((b) => {
+        setWhatsapp(b.whatsapp ?? "");
+        setNomeLoja(b.nome_loja ?? "Samara Beach");
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (carregando) return;
@@ -151,23 +172,46 @@ export default function PedidosPage() {
             {historico.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-gray-100 p-4"
+                className="rounded-xl border border-gray-100 p-4"
               >
-                <div>
-                  <p className="font-mono text-sm text-gray-500">
-                    #{p.id.slice(0, 8)}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {new Date(p.created_at).toLocaleDateString("pt-BR")} ·{" "}
-                    {p.itens.length} item(ns)
-                  </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-mono text-sm text-gray-500">
+                      #{p.id.slice(0, 8)}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(p.created_at).toLocaleDateString("pt-BR")} ·{" "}
+                      {p.itens.length} item(ns)
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-medium text-brand-seaDark">
+                      {STATUS_LABEL[p.status] ?? p.status}
+                    </span>
+                    <p className="mt-1 font-semibold">{formatBRL(p.total)}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-medium text-brand-seaDark">
-                    {STATUS_LABEL[p.status] ?? p.status}
-                  </span>
-                  <p className="mt-1 font-semibold">{formatBRL(p.total)}</p>
-                </div>
+
+                {whatsapp && (
+                  <div className="mt-3 border-t border-gray-100 pt-3">
+                    <a
+                      href={linkWhatsApp(
+                        whatsapp,
+                        mensagemContatoPedido({
+                          pedidoId: p.id,
+                          total: Number(p.total),
+                          nomeLoja,
+                        }),
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-medium text-white transition hover:brightness-95"
+                    >
+                      <IconeWhatsApp className="h-4 w-4" />
+                      Falar com a loja
+                    </a>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

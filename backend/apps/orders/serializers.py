@@ -56,12 +56,22 @@ class AdicionarItemSerializer(serializers.Serializer):
 class PedidoSerializer(serializers.ModelSerializer):
     itens = ItemPedidoSerializer(many=True, read_only=True)
     cupom_codigo = serializers.CharField(source="cupom.codigo", read_only=True)
+    cliente_nome = serializers.CharField(source="cliente.nome", read_only=True, default=None)
+    cliente_email = serializers.CharField(
+        source="cliente.usuario.email", read_only=True, default=None
+    )
+    cliente_telefone = serializers.CharField(
+        source="cliente.telefone", read_only=True, default=None
+    )
 
     class Meta:
         model = Pedido
         fields = [
             "id",
             "cliente",
+            "cliente_nome",
+            "cliente_email",
+            "cliente_telefone",
             "canal",
             "status",
             "cupom",

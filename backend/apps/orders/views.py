@@ -44,8 +44,14 @@ class PedidoViewSet(viewsets.ModelViewSet):
 
     serializer_class = PedidoSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["status"]
-    ordering_fields = ["created_at"]
+    filterset_fields = ["status", "canal"]
+    search_fields = [
+        "id",
+        "cliente__nome",
+        "cliente__usuario__email",
+        "cliente__telefone",
+    ]
+    ordering_fields = ["created_at", "total"]
 
     def get_queryset(self):
         qs = (

@@ -144,6 +144,9 @@ export type CanalVenda = "online" | "presencial";
 export interface Pedido {
   id: string;
   cliente: string | null;
+  cliente_nome: string | null;
+  cliente_email: string | null;
+  cliente_telefone: string | null;
   canal: CanalVenda;
   status: StatusPedido;
   cupom_codigo: string | null;
