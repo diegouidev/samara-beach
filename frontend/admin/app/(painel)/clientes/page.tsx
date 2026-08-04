@@ -93,6 +93,7 @@ function ClientesContent() {
               ? "Nenhum cliente cadastrado ainda."
               : "Nenhum cliente encontrado."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -176,6 +177,7 @@ function ClientesContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 

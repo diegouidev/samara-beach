@@ -144,6 +144,7 @@ function DevolucoesContent() {
               descricao="Só vendas do balcão que ainda não foram canceladas aparecem aqui."
             />
           ) : (
+            <div className="tabela-wrap">
             <table className="tabela">
               <thead>
                 <tr>
@@ -180,12 +181,14 @@ function DevolucoesContent() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
       )}
 
       {historico.length > 0 && !selecionada && (
         <Card className="mt-6" title="Últimas devoluções" bare>
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -225,6 +228,7 @@ function DevolucoesContent() {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>
@@ -289,6 +293,7 @@ function FormDevolucao({
         </Button>
       }
     >
+      <div className="tabela-wrap">
       <table className="tabela">
         <thead>
           <tr>
@@ -343,6 +348,7 @@ function FormDevolucao({
           ))}
         </tbody>
       </table>
+      </div>
 
       <div className="mt-4 space-y-4">
         <Field label="Motivo">

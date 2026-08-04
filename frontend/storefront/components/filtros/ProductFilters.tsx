@@ -21,6 +21,8 @@ export function ProductFilters({
   const router = useRouter();
   const params = useSearchParams();
   const [busca, setBusca] = useState(params.get("search") ?? "");
+  // No mobile os filtros começam recolhidos, para não empurrar os produtos.
+  const [aberto, setAberto] = useState(false);
 
   function setParam(chave: string, valor: string) {
     const novo = new URLSearchParams(params.toString());
@@ -30,7 +32,18 @@ export function ProductFilters({
   }
 
   return (
-    <aside className="space-y-6">
+    <aside>
+      {/* Botão de toggle — só no mobile */}
+      <button
+        onClick={() => setAberto((v) => !v)}
+        className="mb-4 flex w-full items-center justify-between rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-brand-ink md:hidden"
+        aria-expanded={aberto}
+      >
+        Filtros
+        <span className={`transition ${aberto ? "rotate-180" : ""}`}>▾</span>
+      </button>
+
+      <div className={`space-y-6 ${aberto ? "block" : "hidden"} md:block`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -122,6 +135,7 @@ export function ProductFilters({
           </div>
         </div>
       )}
+      </div>
     </aside>
   );
 }

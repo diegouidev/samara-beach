@@ -47,8 +47,17 @@
    * Tabela padrão do painel: cabeçalho discreto em caixa alta, separador
    * suave entre linhas e realce no hover. As páginas só aplicam `.tabela`.
    */
+  /* Container de rolagem horizontal para tabelas densas no mobile.
+     Evita que a tabela estoure a largura da tela; em telas maiores é inócuo. */
+  .tabela-wrap {
+    @apply -mx-px overflow-x-auto rolagem-fina;
+  }
   .tabela {
     @apply w-full border-collapse text-sm;
+  }
+  /* Dentro do wrapper, a tabela não deve encolher abaixo do conteúdo. */
+  .tabela-wrap > .tabela {
+    @apply min-w-full;
   }
   .tabela thead th {
     @apply whitespace-nowrap border-b border-panel-border bg-panel-surfaceMuted

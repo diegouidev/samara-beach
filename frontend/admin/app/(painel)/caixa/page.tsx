@@ -122,6 +122,7 @@ function CaixaContent() {
           <h2 className="border-b border-panel-border px-5 py-3 font-semibold text-panel-ink">
             Fechamentos anteriores
           </h2>
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -165,6 +166,7 @@ function CaixaContent() {
               })}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>
@@ -334,6 +336,7 @@ function CaixaAberto({
         {!resumo || resumo.movimentos.length === 0 ? (
           <EmptyState titulo={"Nenhum movimento."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -369,6 +372,7 @@ function CaixaAberto({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

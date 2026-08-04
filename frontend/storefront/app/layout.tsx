@@ -1,7 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { getBranding, brandingToCssVars } from "@/lib/branding";
+
+// Escala correta no mobile; permite zoom do usuário (acessibilidade).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 // Metadata dinâmica (título + favicon) a partir do branding configurado.
 export async function generateMetadata(): Promise<Metadata> {

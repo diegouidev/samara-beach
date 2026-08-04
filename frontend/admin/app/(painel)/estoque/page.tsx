@@ -98,6 +98,7 @@ function EstoqueContent() {
         {movs.length === 0 ? (
           <p className="text-sm text-slate-400">Sem movimentações.</p>
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -122,6 +123,7 @@ function EstoqueContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

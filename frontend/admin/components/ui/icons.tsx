@@ -177,3 +177,15 @@ export const IconeAlerta = (p: Props) => (
     <path d="M12 10v4M12 17.2v.01" />
   </Base>
 );
+
+export const IconeMenu = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 6h18M3 12h18M3 18h18" />
+  </Base>
+);
+
+export const IconeFechar = (p: Props) => (
+  <Base {...p}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </Base>
+);

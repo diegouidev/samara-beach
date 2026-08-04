@@ -183,6 +183,7 @@ function ComprasContent() {
                 descricao="Registre as compras de mercadoria feitas aos fornecedores."
               />
             ) : (
+              <div className="tabela-wrap">
               <table className="tabela">
                 <thead>
                   <tr>
@@ -213,6 +214,7 @@ function ComprasContent() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </Card>
         </div>
@@ -331,6 +333,7 @@ function ContasTab({
             }
           />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -388,6 +391,7 @@ function ContasTab({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

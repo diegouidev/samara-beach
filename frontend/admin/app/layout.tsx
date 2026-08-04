@@ -1,8 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { getBranding, brandingToCssVars } from "@/lib/branding";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 // A fonte é auto-hospedada pelo Next (sem request ao Google em runtime).
 // `variable` alimenta o --fonte-painel usado no tailwind.config.

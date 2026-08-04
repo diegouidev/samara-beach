@@ -137,6 +137,7 @@ function FornecedoresContent() {
               ? "Nenhum fornecedor cadastrado."
               : "Nenhum fornecedor encontrado."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -215,6 +216,7 @@ function FornecedoresContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

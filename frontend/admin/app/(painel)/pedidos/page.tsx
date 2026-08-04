@@ -66,6 +66,7 @@ function PedidosContent() {
         ) : pedidos.length === 0 ? (
           <EmptyState titulo={"Nenhum pedido ainda."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -115,6 +116,7 @@ function PedidosContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

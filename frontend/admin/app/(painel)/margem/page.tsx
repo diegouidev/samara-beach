@@ -45,6 +45,7 @@ function MargemContent() {
         ) : linhas.length === 0 ? (
           <EmptyState titulo={"Ainda não há vendas confirmadas para calcular margem."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -84,6 +85,7 @@ function MargemContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

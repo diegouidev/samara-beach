@@ -112,6 +112,7 @@ function CategoriasContent() {
         ) : categorias.length === 0 ? (
           <EmptyState titulo={"Nenhuma categoria cadastrada. Crie a primeira para poder cadastrar             produtos."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -173,6 +174,7 @@ function CategoriasContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

@@ -357,6 +357,7 @@ function AbaProdutos({
         {(dados.ranking ?? []).length === 0 ? (
           <EmptyState titulo="Nenhuma venda no período" />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -409,6 +410,7 @@ function AbaProdutos({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 
@@ -421,6 +423,7 @@ function AbaProdutos({
         {(dados.parados ?? []).length === 0 ? (
           <EmptyState titulo="Tudo girou no período" />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -448,6 +451,7 @@ function AbaProdutos({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>
@@ -492,6 +496,7 @@ function AbaClientes({
             descricao="Identifique a cliente no PDV para alimentar este relatório."
           />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -518,6 +523,7 @@ function AbaClientes({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>
@@ -552,6 +558,7 @@ function AbaFinanceiro({
         {(dados.fluxo ?? []).length === 0 ? (
           <EmptyState titulo="Nenhum movimento no período" />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -578,6 +585,7 @@ function AbaFinanceiro({
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
 
@@ -590,6 +598,7 @@ function AbaFinanceiro({
           {(dados.turnos ?? []).length === 0 ? (
             <EmptyState titulo="Nenhum turno no período" />
           ) : (
+            <div className="tabela-wrap">
             <table className="tabela">
               <thead>
                 <tr>
@@ -621,6 +630,7 @@ function AbaFinanceiro({
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
 
@@ -632,6 +642,7 @@ function AbaFinanceiro({
           {(dados.a_vencer ?? []).length === 0 ? (
             <EmptyState titulo="Nenhuma conta em aberto" />
           ) : (
+            <div className="tabela-wrap">
             <table className="tabela">
               <thead>
                 <tr>
@@ -662,6 +673,7 @@ function AbaFinanceiro({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
       </div>
@@ -680,6 +692,7 @@ function TabelaSimples({
     return <EmptyState titulo="Sem dados no período" />;
   }
   return (
+    <div className="tabela-wrap">
     <table className="tabela">
       <thead>
         <tr>
@@ -709,5 +722,6 @@ function TabelaSimples({
         ))}
       </tbody>
     </table>
+    </div>
   );
 }
