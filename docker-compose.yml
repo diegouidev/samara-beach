@@ -90,12 +90,15 @@ services:
       - backend
 
   # Produção: túnel Cloudflare (perfil "tunnel"). Não sobe no dev normal.
-  # Uso: definir CLOUDFLARE_TUNNEL_TOKEN no ambiente e rodar:
-  #   docker compose --profile tunnel up -d
+  # O token vem de backend/.env (CLOUDFLARE_TUNNEL_TOKEN → lido como TUNNEL_TOKEN).
+  # Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile tunnel up -d
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    command: tunnel --no-autoupdate run
+    # cloudflared lê o token da variável TUNNEL_TOKEN, definida em backend/.env.
+    env_file:
+      - ./backend/.env
     profiles: ["tunnel"]
     depends_on:
       - proxy

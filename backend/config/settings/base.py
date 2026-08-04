@@ -114,7 +114,7 @@ USE_TZ = True
 
 # --- Static / Media -----------------------------------------------------
 # /static é usado pelo Next; o static do Django (admin/DRF) vai sob /django-static/.
-STATIC_URL = "django-static/"
+STATIC_URL = "/django-static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 # Barra inicial obrigatória: sem ela, as URLs de mídia dos serializers saem
 # relativas ao path da requisição (ex.: /api/media/...) e quebram as imagens.

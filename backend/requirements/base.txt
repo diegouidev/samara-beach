@@ -10,3 +10,4 @@ celery
 redis
 Pillow
 gunicorn
+whitenoise

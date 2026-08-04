@@ -1,0 +1,47 @@
+# Override de PRODUÇÃO. Uso na VPS:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile tunnel up -d --build
+#
+# Diferenças em relação ao dev:
+# - Backend: gunicorn + settings de produção (DEBUG off), sem code bind-mount.
+# - Sem portas de db/redis/backend expostas ao host (só o tunnel entra).
+# - Static do Django coletado e servido por WhiteNoise; media pelo Caddy (volume).
+# - cloudflared sobe (profile "tunnel").
+#
+# Obs: db/redis/backend já não expõem portas ao host na base — só o proxy.
+services:
+  backend:
+    # Sem bind-mount do código em produção (usa o que está na imagem).
+    volumes:
+      - media:/app/mediafiles
+      - static:/app/staticfiles
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+
+  celery:
+    volumes:
+      - media:/app/mediafiles
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.prod
+
+  storefront:
+    restart: unless-stopped
+
+  admin:
+    restart: unless-stopped
+
+  proxy:
+    # Em produção o acesso é só pelo tunnel; a porta 80 no host é opcional.
+    # Mantemos para diagnóstico local, mas pode remover se quiser.
+    volumes:
+      - ./proxy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - media:/srv/media:ro
+      - static:/srv/static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  static:

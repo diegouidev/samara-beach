@@ -1,0 +1,39 @@
+# Proxy de PRODUÇÃO (HTTP :80). O TLS é terminado pelo Cloudflare Tunnel, que
+# encaminha para cá em HTTP. Como o público é sempre HTTPS, forçamos
+# X-Forwarded-Proto: https para o backend (senão o Django gera URLs http e o
+# cookie "secure" / CSRF quebram).
+:80 {
+	# Static do Django (admin/DRF) servido direto do volume coletado.
+	handle_path /django-static/* {
+		root * /srv/static
+		file_server
+	}
+
+	# Uploads (imagens de produto, logo, favicon) servidos direto do volume.
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# API e Django admin → backend, forçando proto https.
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto https
+		}
+	}
+	handle /django-admin/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	# Painel interno em /admin
+	handle /admin* {
+		reverse_proxy admin:3001
+	}
+
+	# Storefront (loja) — tudo o mais
+	handle {
+		reverse_proxy storefront:3000
+	}
+}
