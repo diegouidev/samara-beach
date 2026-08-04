@@ -1,7 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { listarProdutosParaVitrine, listarCategorias } from "@/lib/api";
+import { getBranding } from "@/lib/branding";
 import { ProductCard } from "@/components/produto/ProductCard";
+import { Hero } from "@/components/home/Hero";
+import { CategoryCards } from "@/components/home/CategoryCards";
 
 // Home é Server Component com ISR (bom para SEO).
 export const revalidate = 60;
@@ -51,75 +53,19 @@ const BENEFICIOS = [
 ];
 
 export default async function HomePage() {
-  const [{ cards, usouMock }, categorias] = await Promise.all([
+  const [{ cards, usouMock }, categorias, branding] = await Promise.all([
     listarProdutosParaVitrine({ ordering: "-created_at" }),
     listarCategorias(),
+    getBranding(),
   ]);
   const destaques = cards.slice(0, 8);
-  // A capa do hero vem do produto mais recente — a loja nunca fica sem imagem.
-  const capa = cards.find((c) => c.imagem)?.imagem ?? null;
+  // Categorias em cards (foto + nome), configuradas no painel.
+  const temCards = categorias.some((c) => c.destaque && c.imagem);
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-brand-sand">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 md:grid-cols-2 md:py-20">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-medium text-brand-sea shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-coral" />
-              Nova coleção de verão
-            </span>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-brand-ink md:text-6xl">
-              Moda praia que
-              <br />
-              combina com o
-              <br />
-              <span className="text-brand-sea">seu verão.</span>
-            </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-gray-600">
-              Biquínis, maiôs, saídas e acessórios — com produção própria e
-              curadoria especial. Encontre o seu look à beira-mar.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/produtos"
-                className="rounded-full bg-brand-coral px-8 py-3.5 font-medium text-white shadow-lg shadow-brand-coral/20 transition hover:opacity-90"
-              >
-                Ver coleção
-              </Link>
-              <Link
-                href="/produtos?ordering=-created_at"
-                className="rounded-full border border-brand-ink/15 bg-white/60 px-8 py-3.5 font-medium text-brand-ink backdrop-blur transition hover:border-brand-ink/40"
-              >
-                Novidades
-              </Link>
-            </div>
-          </div>
-
-          {capa && (
-            <div className="relative hidden md:block">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] shadow-2xl">
-                <Image
-                  src={capa}
-                  alt="Coleção de verão"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 480px"
-                  className="object-cover"
-                  priority
-                  unoptimized
-                />
-              </div>
-              {/* Selo flutuante — recurso comum nas vitrines de moda praia. */}
-              <div className="absolute -bottom-5 -left-5 rounded-2xl bg-white px-5 py-4 shadow-xl">
-                <p className="text-xs text-gray-500">A partir de</p>
-                <p className="text-xl font-bold text-brand-ink">
-                  12x sem juros
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* Hero configurável (Personalização) */}
+      <Hero branding={branding} />
 
       {/* Benefícios */}
       <section className="border-y border-gray-100 bg-white">
@@ -149,24 +95,28 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Categorias */}
-      {categorias.length > 0 && (
-        <section className="mx-auto max-w-6xl px-4 pt-14">
-          <h2 className="text-2xl font-bold tracking-tight text-brand-ink">
-            Navegue por categoria
-          </h2>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {categorias.map((c) => (
-              <Link
-                key={c.id}
-                href={`/produtos?categoria=${c.slug}`}
-                className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-brand-ink transition hover:border-brand-sea hover:text-brand-sea"
-              >
-                {c.nome}
-              </Link>
-            ))}
-          </div>
-        </section>
+      {/* Categorias — em cards (foto+nome) se configuradas; senão, pílulas */}
+      {temCards ? (
+        <CategoryCards categorias={categorias} />
+      ) : (
+        categorias.length > 0 && (
+          <section className="mx-auto max-w-6xl px-4 pt-14">
+            <h2 className="text-2xl font-bold tracking-tight text-brand-ink">
+              Navegue por categoria
+            </h2>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {categorias.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/produtos?categoria=${c.slug}`}
+                  className="rounded-full border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-brand-ink transition hover:border-brand-sea hover:text-brand-sea"
+                >
+                  {c.nome}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )
       )}
 
       {/* Destaques */}

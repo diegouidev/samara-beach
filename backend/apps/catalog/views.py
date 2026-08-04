@@ -61,9 +61,9 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     permission_classes = [ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     lookup_field = "slug"
-    filterset_fields = ["ativo", "categoria_pai"]
+    filterset_fields = ["ativo", "categoria_pai", "destaque"]
     search_fields = ["nome", "slug"]
-    ordering_fields = ["nome", "created_at"]
+    ordering_fields = ["nome", "created_at", "ordem"]
 
     def perform_destroy(self, instance):
         # A exclusão é soft; ainda assim, deixar produtos apontando para uma

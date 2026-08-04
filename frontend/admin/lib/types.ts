@@ -36,6 +36,9 @@ export interface Categoria {
   slug: string;
   categoria_pai: string | null;
   categoria_pai_nome: string | null;
+  imagem: string | null;
+  ordem: number;
+  destaque: boolean;
   ativo: boolean;
   total_produtos: number;
 }

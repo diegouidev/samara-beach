@@ -25,12 +25,18 @@ class Categoria(SoftDeleteModel):
         blank=True,
         related_name="subcategorias",
     )
+    # Imagem do card da categoria na vitrine (home).
+    imagem = models.ImageField(upload_to="categorias/", null=True, blank=True)
+    # Ordem de exibição dos cards na home (menor primeiro).
+    ordem = models.PositiveSmallIntegerField(default=0)
+    # Destacar na home (mostrar como card na vitrine de categorias).
+    destaque = models.BooleanField(default=True)
     ativo = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("categoria")
         verbose_name_plural = _("categorias")
-        ordering = ["nome"]
+        ordering = ["ordem", "nome"]
 
     def __str__(self):
         return self.nome

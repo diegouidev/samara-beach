@@ -176,6 +176,23 @@ export function atualizarCategoria(slug: string, payload: Partial<Categoria>) {
   });
 }
 
+/** Cria/atualiza categoria com upload de imagem (multipart). */
+export function criarCategoriaMultipart(form: FormData) {
+  return request<Categoria>("/api/categorias/", {
+    method: "POST",
+    raw: true,
+    body: form,
+  });
+}
+
+export function atualizarCategoriaMultipart(slug: string, form: FormData) {
+  return request<Categoria>(`/api/categorias/${slug}/`, {
+    method: "PATCH",
+    raw: true,
+    body: form,
+  });
+}
+
 export function excluirCategoria(slug: string) {
   return request<void>(`/api/categorias/${slug}/`, { method: "DELETE" });
 }
