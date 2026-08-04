@@ -34,8 +34,11 @@ services:
     restart: unless-stopped
 
   proxy:
-    # Em produção o acesso é só pelo tunnel; a porta 80 no host é opcional.
-    # Mantemos para diagnóstico local, mas pode remover se quiser.
+    # Publica o Caddy na porta 8090 do host — usada pelo cloudflared quando ele
+    # roda via systemd/host (rota http://localhost:8090). Se o cloudflared for
+    # container e entrar na rede 'samarabeach_net', ele alcança direto 'proxy:80'.
+    ports:
+      - "8090:80"
     volumes:
       - ./proxy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - media:/srv/media:ro
@@ -45,3 +48,8 @@ services:
 
 volumes:
   static:
+
+# Rede com nome fixo para o cloudflared existente poder se conectar (caso container).
+networks:
+  default:
+    name: samarabeach_net
