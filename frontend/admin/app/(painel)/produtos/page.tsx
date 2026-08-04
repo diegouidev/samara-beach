@@ -106,6 +106,7 @@ function ProdutosContent() {
               ? "Nenhum produto cadastrado."
               : "Nenhum produto encontrado com esses filtros."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -192,6 +193,7 @@ function ProdutosContent() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { slugify } from "@/lib/masks";
+import { resolveImagem } from "@/lib/format";
 import { Alerta, Badge, Button, Card, EmptyState, Field, PageHeader, inputClass } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import type { Categoria } from "@/lib/types";
@@ -112,6 +114,7 @@ function CategoriasContent() {
         ) : categorias.length === 0 ? (
           <EmptyState titulo={"Nenhuma categoria cadastrada. Crie a primeira para poder cadastrar             produtos."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -127,7 +130,20 @@ function CategoriasContent() {
               {categorias.map((c) => (
                 <tr key={c.id}>
                   <td className="font-medium text-panel-ink">
-                    {c.nome}
+                    <div className="flex items-center gap-3">
+                      <span className="relative h-9 w-12 flex-shrink-0 overflow-hidden rounded-md bg-panel-surfaceMuted">
+                        {c.imagem && (
+                          <Image
+                            src={resolveImagem(c.imagem) ?? ""}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        )}
+                      </span>
+                      {c.nome}
+                    </div>
                   </td>
                   <td className="font-mono text-xs text-slate-500">
                     {c.slug}
@@ -173,6 +189,7 @@ function CategoriasContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>
@@ -194,6 +211,9 @@ function CategoriaForm({
   const [slug, setSlug] = useState(inicial?.slug ?? "");
   const [pai, setPai] = useState(inicial?.categoria_pai ?? "");
   const [ativo, setAtivo] = useState(inicial?.ativo ?? true);
+  const [destaque, setDestaque] = useState(inicial?.destaque ?? true);
+  const [ordem, setOrdem] = useState(String(inicial?.ordem ?? 0));
+  const [imagem, setImagem] = useState<File | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -202,16 +222,19 @@ function CategoriaForm({
     setErro(null);
     setEnviando(true);
     try {
-      const payload = {
-        nome,
-        slug: slug || slugify(nome),
-        categoria_pai: pai || null,
-        ativo,
-      };
+      const form = new FormData();
+      form.append("nome", nome);
+      form.append("slug", slug || slugify(nome));
+      form.append("categoria_pai", pai || "");
+      form.append("ativo", String(ativo));
+      form.append("destaque", String(destaque));
+      form.append("ordem", ordem || "0");
+      if (imagem) form.append("imagem", imagem);
+
       if (inicial) {
-        await api.atualizarCategoria(inicial.slug, payload);
+        await api.atualizarCategoriaMultipart(inicial.slug, form);
       } else {
-        await api.criarCategoria(payload);
+        await api.criarCategoriaMultipart(form);
       }
       onSalvo();
     } catch (err) {
@@ -264,14 +287,60 @@ function CategoriaForm({
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={ativo}
-          onChange={(e) => setAtivo(e.target.checked)}
-        />
-        Categoria ativa (aparece na loja)
-      </label>
+      {/* Card na home: imagem + ordem + destaque */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Imagem do card (home)" hint="Aparece na vitrine de categorias. Recomendado 600×450px.">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImagem(e.target.files?.[0] ?? null)}
+            className="text-sm"
+          />
+          {(imagem || inicial?.imagem) && (
+            <div className="relative mt-2 h-24 w-40 overflow-hidden rounded-lg border border-panel-border">
+              <Image
+                src={
+                  imagem
+                    ? URL.createObjectURL(imagem)
+                    : resolveImagem(inicial?.imagem ?? null) ?? ""
+                }
+                alt="prévia"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+          )}
+        </Field>
+        <Field label="Ordem na home" hint="Menor aparece primeiro.">
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            value={ordem}
+            onChange={(e) => setOrdem(e.target.value)}
+          />
+        </Field>
+      </div>
+
+      <div className="flex flex-wrap gap-6">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={ativo}
+            onChange={(e) => setAtivo(e.target.checked)}
+          />
+          Categoria ativa (aparece na loja)
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={destaque}
+            onChange={(e) => setDestaque(e.target.checked)}
+          />
+          Mostrar na vitrine de categorias (home)
+        </label>
+      </div>
 
       {erro && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">

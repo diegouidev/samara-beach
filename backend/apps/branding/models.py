@@ -47,6 +47,43 @@ class Branding(TimeStampedModel):
     logo = models.ImageField(upload_to="branding/", null=True, blank=True)
     favicon = models.ImageField(upload_to="branding/", null=True, blank=True)
 
+    # --- Hero (banner do topo da home) --------------------------------------
+    # Modo controla como o topo da loja é renderizado:
+    #   texto  → só os textos (sem imagem de fundo)
+    #   foto   → imagem de fundo + textos por cima
+    #   banner → banner com arte pronta (só a imagem, sem textos)
+    HERO_TEXTO = "texto"
+    HERO_FOTO = "foto"
+    HERO_BANNER = "banner"
+    HERO_MODOS = [
+        (HERO_TEXTO, _("Somente textos")),
+        (HERO_FOTO, _("Foto de fundo + textos")),
+        (HERO_BANNER, _("Banner pronto (só imagem)")),
+    ]
+    hero_modo = models.CharField(
+        max_length=10, choices=HERO_MODOS, default=HERO_FOTO,
+        help_text=_("Como o topo da loja é exibido."),
+    )
+    hero_imagem = models.ImageField(
+        upload_to="branding/", null=True, blank=True,
+        help_text=_("Imagem de fundo (modo foto) ou banner pronto (modo banner)."),
+    )
+    hero_imagem_link = models.CharField(
+        max_length=300, blank=True,
+        help_text=_("Para onde o banner leva ao clicar (modo banner). Ex.: /produtos"),
+    )
+    hero_badge = models.CharField(max_length=80, blank=True, default="Nova coleção de verão")
+    hero_titulo = models.CharField(
+        max_length=160, blank=True, default="Moda praia que combina com o seu verão.",
+    )
+    hero_subtitulo = models.TextField(
+        blank=True,
+        default="Biquínis, maiôs, saídas e acessórios — com produção própria e "
+        "curadoria especial. Encontre o seu look à beira-mar.",
+    )
+    hero_cta_texto = models.CharField(max_length=40, blank=True, default="Ver coleção")
+    hero_cta_link = models.CharField(max_length=300, blank=True, default="/produtos")
+
     # Canal de fechamento da loja online: o checkout leva a conversa para cá.
     whatsapp = models.CharField(
         max_length=20,

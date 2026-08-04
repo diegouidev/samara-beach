@@ -10,6 +10,9 @@ export interface Categoria {
   nome: string;
   slug: string;
   categoria_pai: string | null;
+  imagem: string | null;
+  ordem: number;
+  destaque: boolean;
   ativo: boolean;
   created_at?: string;
   updated_at?: string;

@@ -211,6 +211,7 @@ function PDVContent() {
             {itens.length === 0 ? (
               <EmptyState titulo={"Nenhum item na venda. Busque pelo SKU ou nome do produto."} />
             ) : (
+              <div className="tabela-wrap">
               <table className="tabela">
                 <thead>
                   <tr>
@@ -306,6 +307,7 @@ function PDVContent() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </Card>
 

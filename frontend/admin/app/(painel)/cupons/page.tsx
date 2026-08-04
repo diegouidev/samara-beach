@@ -62,6 +62,7 @@ function CuponsContent() {
         ) : cupons.length === 0 ? (
           <EmptyState titulo={"Nenhum cupom cadastrado."} />
         ) : (
+          <div className="tabela-wrap">
           <table className="tabela">
             <thead>
               <tr>
@@ -108,6 +109,7 @@ function CuponsContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

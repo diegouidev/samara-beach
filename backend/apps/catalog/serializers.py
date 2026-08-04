@@ -18,6 +18,7 @@ class CategoriaSerializer(serializers.ModelSerializer):
     categoria_pai_nome = serializers.CharField(
         source="categoria_pai.nome", read_only=True, default=None
     )
+    imagem = RelativeImageField(required=False, allow_null=True)
 
     class Meta:
         model = Categoria
@@ -27,6 +28,9 @@ class CategoriaSerializer(serializers.ModelSerializer):
             "slug",
             "categoria_pai",
             "categoria_pai_nome",
+            "imagem",
+            "ordem",
+            "destaque",
             "ativo",
             "total_produtos",
             "created_at",
