@@ -162,7 +162,7 @@ export function ProductCard({ data }: { data: ProductCardData }) {
               className={`w-full rounded-full px-4 py-2.5 text-sm font-medium transition ${
                 adicionado
                   ? "bg-emerald-600 text-white"
-                  : "bg-brand-ink text-white hover:bg-brand-sea"
+                  : "bg-brand-sea text-white hover:bg-brand-seaDark"
               }`}
             >
               {adicionado ? "✓ Adicionado" : "Adicionar à sacola"}
@@ -170,7 +170,7 @@ export function ProductCard({ data }: { data: ProductCardData }) {
           ) : (
             <Link
               href={`/produtos/${data.slug}`}
-              className="block w-full rounded-full border border-brand-ink px-4 py-2.5 text-center text-sm font-medium text-brand-ink transition hover:bg-brand-ink hover:text-white"
+              className="block w-full rounded-full border border-brand-sea px-4 py-2.5 text-center text-sm font-medium text-brand-sea transition hover:bg-brand-sea hover:text-white"
             >
               Escolher tamanho
             </Link>
