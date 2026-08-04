@@ -37,7 +37,9 @@ services:
     # Publica o Caddy na porta 8090 do host — usada pelo cloudflared quando ele
     # roda via systemd/host (rota http://localhost:8090). Se o cloudflared for
     # container e entrar na rede 'samarabeach_net', ele alcança direto 'proxy:80'.
-    ports:
+    # !override substitui a lista de portas da base (que tinha 80:80 e conflitava
+    # com o Nginx/serviço já usando a porta 80 do host).
+    ports: !override
       - "8090:80"
     volumes:
       - ./proxy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
