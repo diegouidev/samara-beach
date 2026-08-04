@@ -12,12 +12,12 @@ export function Footer({ branding }: { branding: Branding }) {
         <div className="flex flex-col justify-between gap-6 md:flex-row">
           <div>
             {logo ? (
-              <span className="relative block h-12 w-36">
+              <span className="relative block h-16 w-48">
                 <Image
                   src={logo}
                   alt={branding.nome_loja}
                   fill
-                  sizes="144px"
+                  sizes="192px"
                   className="object-contain object-left"
                   unoptimized
                 />

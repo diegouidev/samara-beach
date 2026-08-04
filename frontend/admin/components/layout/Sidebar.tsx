@@ -195,19 +195,19 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 z-20 flex h-screen w-60 flex-shrink-0 flex-col border-r border-panel-sidebarBorder bg-panel-sidebar shadow-[1px_0_3px_0_rgb(15_23_42/0.04)]">
       {/* Marca: só a logo. O nome da loja fica no title, para leitores de tela. */}
-      <div className="flex h-20 flex-shrink-0 items-center justify-center border-b border-panel-sidebarBorder px-5">
+      <div className="flex h-24 flex-shrink-0 items-center justify-center border-b border-panel-sidebarBorder px-4">
         <Link
           href="/dashboard"
           title={nomeLoja}
           className="flex items-center justify-center rounded-xl transition hover:opacity-80"
         >
           {logo ? (
-            <span className="relative block h-11 w-[150px]">
+            <span className="relative block h-14 w-[200px]">
               <Image
                 src={logo}
                 alt={nomeLoja}
                 fill
-                sizes="150px"
+                sizes="200px"
                 className="object-contain"
                 priority
                 unoptimized

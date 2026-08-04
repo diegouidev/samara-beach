@@ -335,6 +335,19 @@ export async function listarEnderecos(): Promise<Endereco[]> {
   return Array.isArray(data) ? data : data.results;
 }
 
+export type NovoEndereco = Omit<Endereco, "id">;
+
+export async function criarEndereco(payload: NovoEndereco): Promise<Endereco> {
+  return apiFetch<Endereco>(ENDPOINTS.enderecos, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function excluirEndereco(id: string): Promise<void> {
+  await apiFetch<void>(`${ENDPOINTS.enderecos}${id}/`, { method: "DELETE" });
+}
+
 // =======================================================================
 // Carrinho / Pedidos (Client Components — exige login no backend)
 // =======================================================================

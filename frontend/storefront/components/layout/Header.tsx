@@ -88,12 +88,12 @@ export function Header({ branding }: { branding: Branding }) {
 
         <Link href="/" className="flex items-center gap-3">
           {logo ? (
-            <span className="relative block h-11 w-32">
+            <span className="relative block h-14 w-44">
               <Image
                 src={logo}
                 alt={branding.nome_loja}
                 fill
-                sizes="128px"
+                sizes="176px"
                 className="object-contain object-left"
                 priority
                 unoptimized
