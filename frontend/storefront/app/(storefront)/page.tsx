@@ -53,7 +53,7 @@ const BENEFICIOS = [
 ];
 
 export default async function HomePage() {
-  const [{ cards, usouMock }, categorias, branding] = await Promise.all([
+  const [{ cards }, categorias, branding] = await Promise.all([
     listarProdutosParaVitrine({ ordering: "-created_at" }),
     listarCategorias(),
     getBranding(),
@@ -137,12 +137,6 @@ export default async function HomePage() {
             Ver tudo →
           </Link>
         </div>
-
-        {usouMock && (
-          <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-700">
-            Exibindo produtos de demonstração (a API ainda não retornou itens).
-          </p>
-        )}
 
         {destaques.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-500">

@@ -46,23 +46,16 @@ export default async function ProdutoPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { produto, usouMock } = await buscarProdutoPorSlug(slug);
+  const { produto } = await buscarProdutoPorSlug(slug);
 
   if (!produto) notFound();
 
-  const tabela = usouMock
-    ? null
-    : await buscarTabelaMedidas(produto.id, produto.categoria);
+  const tabela = await buscarTabelaMedidas(produto.id, produto.categoria);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      {usouMock && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-700">
-          Produto de demonstração.
-        </p>
-      )}
       <ProductDetail produto={produto} tabela={tabela} />
-      {!usouMock && <ProductReviews produtoId={produto.id} />}
+      <ProductReviews produtoId={produto.id} />
     </div>
   );
 }

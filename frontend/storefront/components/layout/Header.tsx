@@ -7,6 +7,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/providers/AuthProvider";
 import { resolveImagem } from "@/lib/format";
 import type { Branding } from "@/lib/branding";
+import type { Categoria } from "@/lib/types";
 
 /** Ícone de sacola/carrinho (inline para não depender de biblioteca). */
 function IconeCarrinho({ className = "" }: { className?: string }) {
@@ -44,13 +45,22 @@ function IconeFechar({ className = "" }: { className?: string }) {
   );
 }
 
-const LINKS_NAV = [
-  { href: "/produtos", label: "Produtos" },
-  { href: "/produtos?categoria=biquinis", label: "Biquínis" },
-  { href: "/produtos?categoria=saidas-de-praia", label: "Saídas" },
-];
+export function Header({
+  branding,
+  categorias,
+}: {
+  branding: Branding;
+  categorias: Categoria[];
+}) {
+  // Menu montado a partir das categorias reais do painel (a listagem filtra por id).
+  const linksNav = [
+    { href: "/produtos", label: "Produtos" },
+    ...categorias.slice(0, 4).map((c) => ({
+      href: `/produtos?categoria=${c.id}`,
+      label: c.nome,
+    })),
+  ];
 
-export function Header({ branding }: { branding: Branding }) {
   // Assina `itens` (e não o seletor `totalItens`): a função tem referência
   // estável, então o contador não re-renderizava ao adicionar um produto.
   const itens = useCart((s) => s.itens);
@@ -107,7 +117,7 @@ export function Header({ branding }: { branding: Branding }) {
         </Link>
 
         <nav className="hidden gap-6 text-sm font-medium text-gray-600 md:flex">
-          {LINKS_NAV.map((l) => (
+          {linksNav.map((l) => (
             <Link key={l.label} href={l.href} className="hover:text-brand-sea">
               {l.label}
             </Link>
@@ -181,7 +191,7 @@ export function Header({ branding }: { branding: Branding }) {
           </button>
         </div>
         <nav className="flex flex-col p-2">
-          {LINKS_NAV.map((l) => (
+          {linksNav.map((l) => (
             <Link
               key={l.label}
               href={l.href}

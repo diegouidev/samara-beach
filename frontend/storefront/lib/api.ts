@@ -8,7 +8,6 @@
  */
 import { ENDPOINTS } from "./endpoints";
 import { resolveImagem } from "./format";
-import { MOCK_PRODUTOS } from "./mocks";
 import type {
   Cliente,
   Endereco,
@@ -156,48 +155,33 @@ function buildQuery(params: Record<string, string | number | undefined>) {
 
 /**
  * Lista produtos com filtros de API (categoria/busca/ordenação).
- * Se a API estiver vazia ou indisponível, cai no mock para a vitrine não ficar vazia.
+ * Sem dados de demonstração: se a API estiver vazia ou indisponível, a vitrine
+ * mostra o estado vazio — nunca produtos que não existem no catálogo.
  */
 export async function listarProdutos(
   filtros: FiltrosProduto = {},
-): Promise<{ produtos: ProdutoResumo[]; count: number; usouMock: boolean }> {
+): Promise<{ produtos: ProdutoResumo[]; count: number }> {
   const qs = buildQuery({ ...filtros });
   try {
     const data = await apiGet<Paginated<ProdutoResumo>>(
       `${ENDPOINTS.produtos}${qs}`,
       60,
     );
-    if (data.count === 0) {
-      return {
-        produtos: MOCK_PRODUTOS.map(toResumo),
-        count: MOCK_PRODUTOS.length,
-        usouMock: true,
-      };
-    }
-    return { produtos: data.results, count: data.count, usouMock: false };
+    return { produtos: data.results, count: data.count };
   } catch {
-    return {
-      produtos: MOCK_PRODUTOS.map(toResumo),
-      count: MOCK_PRODUTOS.length,
-      usouMock: true,
-    };
+    return { produtos: [], count: 0 };
   }
 }
 
-/** Detalhe de produto por slug (com variações). Fallback para mock. */
+/** Detalhe de produto por slug (com variações). */
 export async function buscarProdutoPorSlug(
   slug: string,
-): Promise<{ produto: Produto | null; usouMock: boolean }> {
+): Promise<{ produto: Produto | null }> {
   try {
     const produto = await apiGet<Produto>(ENDPOINTS.produto(slug), 60);
-    return { produto, usouMock: false };
-  } catch (err) {
-    const mock = MOCK_PRODUTOS.find((p) => p.slug === slug) ?? null;
-    if (mock) return { produto: mock, usouMock: true };
-    if (err instanceof ApiError && err.status === 404) {
-      return { produto: null, usouMock: false };
-    }
-    return { produto: null, usouMock: true };
+    return { produto };
+  } catch {
+    return { produto: null };
   }
 }
 
@@ -210,9 +194,8 @@ export async function listarProdutosParaVitrine(
   filtros: FiltrosProduto = {},
 ): Promise<{
   cards: import("@/components/produto/ProductCard").ProductCardData[];
-  usouMock: boolean;
 }> {
-  const { produtos, usouMock } = await listarProdutos(filtros);
+  const { produtos } = await listarProdutos(filtros);
 
   const cards = produtos.map((p) => ({
     slug: p.slug,
@@ -229,7 +212,7 @@ export async function listarProdutosParaVitrine(
     tamanho: p.variacao_destaque?.tamanho,
   }));
 
-  return { cards, usouMock };
+  return { cards };
 }
 
 export async function listarCategorias() {
@@ -242,36 +225,6 @@ export async function listarCategorias() {
   } catch {
     return [];
   }
-}
-
-function toResumo(p: Produto): ProdutoResumo {
-  const variacao = p.variacoes.find((v) => v.ativo) ?? p.variacoes[0];
-  const imagem = variacao?.imagens?.[0];
-  return {
-    id: p.id,
-    nome: p.nome,
-    slug: p.slug,
-    categoria: p.categoria,
-    categoria_nome: "",
-    tipo_origem: p.tipo_origem,
-    ativo: p.ativo,
-    imagem_principal: imagem?.url_externa || imagem?.imagem || null,
-    preco_minimo: variacao?.preco_vigente ?? null,
-    preco_original: variacao?.preco ?? null,
-    preco_promocional: variacao?.preco_promocional ?? null,
-    total_variacoes: p.variacoes.length,
-    tamanhos: Array.from(
-      new Set(p.variacoes.map((v) => v.tamanho).filter(Boolean)),
-    ).sort(),
-    variacao_destaque: variacao
-      ? {
-          id: variacao.id,
-          sku: variacao.sku,
-          cor: variacao.cor,
-          tamanho: variacao.tamanho,
-        }
-      : null,
-  };
 }
 
 // =======================================================================

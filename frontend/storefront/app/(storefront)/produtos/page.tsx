@@ -1,7 +1,6 @@
-import { listarProdutosParaVitrine, listarCategorias } from "@/lib/api";
+import { listarProdutos, listarProdutosParaVitrine, listarCategorias } from "@/lib/api";
 import { ProductCard } from "@/components/produto/ProductCard";
 import { ProductFilters } from "@/components/filtros/ProductFilters";
-import { MOCK_PRODUTOS } from "@/lib/mocks";
 
 export const revalidate = 60;
 
@@ -10,17 +9,20 @@ export const metadata = {
   description: "Listagem de produtos de moda praia com filtros.",
 };
 
-// Cores/tamanhos para os filtros — derivados dos mocks + variações conhecidas.
-function opcoesDeVariacao() {
+/**
+ * Cores/tamanhos disponíveis para os filtros — derivados do catálogo real
+ * (lista completa, sem os filtros aplicados, para as opções não sumirem
+ * conforme o cliente vai filtrando).
+ */
+async function opcoesDeVariacao() {
+  const { produtos } = await listarProdutos();
   const cores = new Set<string>();
   const tamanhos = new Set<string>();
-  for (const p of MOCK_PRODUTOS) {
-    for (const v of p.variacoes) {
-      if (v.cor) cores.add(v.cor);
-      if (v.tamanho) tamanhos.add(v.tamanho);
-    }
+  for (const p of produtos) {
+    if (p.variacao_destaque?.cor) cores.add(p.variacao_destaque.cor);
+    for (const t of p.tamanhos ?? []) tamanhos.add(t);
   }
-  return { cores: [...cores], tamanhos: [...tamanhos] };
+  return { cores: [...cores].sort(), tamanhos: [...tamanhos].sort() };
 }
 
 export default async function ProdutosPage({
@@ -29,7 +31,7 @@ export default async function ProdutosPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await searchParams;
-  const [{ cards, usouMock }, categorias] = await Promise.all([
+  const [{ cards }, categorias, { cores, tamanhos }] = await Promise.all([
     listarProdutosParaVitrine({
       categoria: sp.categoria,
       search: sp.search,
@@ -40,9 +42,12 @@ export default async function ProdutosPage({
       ordering: sp.ordering,
     }),
     listarCategorias(),
+    opcoesDeVariacao(),
   ]);
 
-  const { cores, tamanhos } = opcoesDeVariacao();
+  const temFiltro = Boolean(
+    sp.categoria || sp.search || sp.cor || sp.tamanho || sp.preco_min || sp.preco_max,
+  );
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
@@ -56,15 +61,11 @@ export default async function ProdutosPage({
         />
 
         <div>
-          {usouMock && (
-            <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-700">
-              Exibindo produtos de demonstração.
-            </p>
-          )}
-
           {cards.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-gray-200 p-12 text-center text-gray-500">
-              Nenhum produto encontrado para os filtros selecionados.
+              {temFiltro
+                ? "Nenhum produto encontrado para os filtros selecionados."
+                : "Nenhum produto publicado ainda."}
             </p>
           ) : (
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
