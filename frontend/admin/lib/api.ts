@@ -32,6 +32,12 @@ import type {
   VariacaoProduto,
   VendaPDV,
 } from "./types";
+import type {
+  ConsultaCep,
+  ConsultaCnpj,
+  Empresa,
+  EmpresaForm,
+} from "./empresa";
 
 /**
  * Base da API:
@@ -755,5 +761,34 @@ export function margem(params: Record<string, string> = {}) {
   const qs = new URLSearchParams(params).toString();
   return request<{ results: MargemLinha[] }>(
     `/api/relatorios/margem/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+// =======================================================================
+// Empresa (dados cadastrais e fiscais)
+// =======================================================================
+
+export function getEmpresa() {
+  return request<Empresa>("/api/empresa/");
+}
+
+export function atualizarEmpresa(dados: Partial<EmpresaForm>) {
+  return request<Empresa>("/api/empresa/", {
+    method: "PATCH",
+    body: JSON.stringify(dados),
+  });
+}
+
+/** Endereço a partir do CEP (BrasilAPI, via backend). */
+export function consultarCep(cep: string) {
+  return request<ConsultaCep>(
+    `/api/empresa/consultar-cep/?cep=${encodeURIComponent(cep)}`,
+  );
+}
+
+/** Dados cadastrais a partir do CNPJ (Receita Federal, via backend). */
+export function consultarCnpj(cnpj: string) {
+  return request<ConsultaCnpj>(
+    `/api/empresa/consultar-cnpj/?cnpj=${encodeURIComponent(cnpj)}`,
   );
 }

@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { getBranding, type Branding } from "@/lib/branding";
+import type { Empresa } from "@/lib/empresa";
 import { formatBRL } from "@/lib/format";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import type { VendaPDV } from "@/lib/types";
@@ -34,6 +35,7 @@ export default function ReciboPage({
 function Recibo({ id }: { id: string }) {
   const [venda, setVenda] = useState<VendaPDV | null>(null);
   const [branding, setBranding] = useState<Branding | null>(null);
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,6 +44,8 @@ function Recibo({ id }: { id: string }) {
       .then(setVenda)
       .catch((e) => setErro(e instanceof Error ? e.message : "Erro"));
     getBranding(0).then(setBranding).catch(() => setBranding(null));
+    // Sem empresa cadastrada o recibo ainda sai — só não leva os dados fiscais.
+    api.getEmpresa().then(setEmpresa).catch(() => setEmpresa(null));
   }, [id]);
 
   if (erro) return <p className="p-8 text-red-600">{erro}</p>;
@@ -72,8 +76,30 @@ function Recibo({ id }: { id: string }) {
 
       <header className="border-b border-dashed border-slate-300 pb-3 text-center">
         <p className="text-lg font-bold">
-          {branding?.nome_loja ?? "Samara Beach"}
+          {empresa?.nome_fantasia || branding?.nome_loja || "Samara Beach"}
         </p>
+        {/* Dados do emitente — exigidos no documento de venda. */}
+        {empresa?.razao_social && (
+          <p className="mt-0.5 text-[11px] leading-tight text-slate-600">
+            {empresa.razao_social}
+          </p>
+        )}
+        {empresa?.cnpj && (
+          <p className="text-[11px] leading-tight text-slate-600">
+            CNPJ {empresa.cnpj}
+            {empresa.inscricao_estadual && ` · IE ${empresa.inscricao_estadual}`}
+          </p>
+        )}
+        {empresa?.endereco_linha && (
+          <p className="text-[11px] leading-tight text-slate-600">
+            {empresa.endereco_linha}
+          </p>
+        )}
+        {empresa?.telefone && (
+          <p className="text-[11px] leading-tight text-slate-600">
+            {empresa.telefone}
+          </p>
+        )}
         <p className="mt-1 text-xs text-slate-500">
           {new Date(venda.created_at).toLocaleString("pt-BR")}
         </p>
