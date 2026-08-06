@@ -76,9 +76,9 @@ export function ProductFilters({
             {categorias.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setParam("categoria", c.id)}
+                onClick={() => setParam("categoria", c.slug)}
                 className={`block text-sm ${
-                  params.get("categoria") === c.id
+                  params.get("categoria") === c.slug
                     ? "font-semibold text-brand-sea"
                     : "text-gray-600 hover:text-brand-sea"
                 }`}

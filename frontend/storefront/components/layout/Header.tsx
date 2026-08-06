@@ -52,11 +52,11 @@ export function Header({
   branding: Branding;
   categorias: Categoria[];
 }) {
-  // Menu montado a partir das categorias reais do painel (a listagem filtra por id).
+  // Menu montado a partir das categorias reais do painel (filtro por slug, como os cards da home).
   const linksNav = [
     { href: "/produtos", label: "Produtos" },
     ...categorias.slice(0, 4).map((c) => ({
-      href: `/produtos?categoria=${c.id}`,
+      href: `/produtos?categoria=${c.slug}`,
       label: c.nome,
     })),
   ];
