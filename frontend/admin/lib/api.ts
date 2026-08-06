@@ -16,6 +16,7 @@ import type {
   MargemLinha,
   MovimentacaoEstoque,
   NomeRelatorio,
+  NovoUsuarioInterno,
   Paginated,
   Pedido,
   Produto,
@@ -28,6 +29,7 @@ import type {
   TipoDevolucao,
   TokenResponse,
   Usuario,
+  UsuarioInterno,
   VariacaoPDV,
   VariacaoProduto,
   VendaPDV,
@@ -791,4 +793,53 @@ export function consultarCnpj(cnpj: string) {
   return request<ConsultaCnpj>(
     `/api/empresa/consultar-cnpj/?cnpj=${encodeURIComponent(cnpj)}`,
   );
+}
+
+// =======================================================================
+// Usuários do sistema (equipe interna)
+// =======================================================================
+
+export function listarUsuariosInternos(params: Record<string, string> = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return request<Paginated<UsuarioInterno>>(
+    `/api/auth/usuarios/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export function criarUsuarioInterno(payload: NovoUsuarioInterno) {
+  return request<UsuarioInterno>("/api/auth/usuarios/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function atualizarUsuarioInterno(
+  id: string,
+  payload: Partial<Omit<UsuarioInterno, "id" | "nome_exibicao">>,
+) {
+  return request<UsuarioInterno>(`/api/auth/usuarios/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Reset de senha feito pelo admin (não exige a senha atual). */
+export function definirSenhaUsuario(id: string, nova_senha: string) {
+  return request<{ detail: string }>(
+    `/api/auth/usuarios/${id}/definir-senha/`,
+    { method: "POST", body: JSON.stringify({ nova_senha }) },
+  );
+}
+
+/** Bloqueia o acesso preservando o histórico de vendas/caixa da pessoa. */
+export function desativarUsuario(id: string) {
+  return request<UsuarioInterno>(`/api/auth/usuarios/${id}/desativar/`, {
+    method: "POST",
+  });
+}
+
+export function reativarUsuario(id: string) {
+  return request<UsuarioInterno>(`/api/auth/usuarios/${id}/reativar/`, {
+    method: "POST",
+  });
 }

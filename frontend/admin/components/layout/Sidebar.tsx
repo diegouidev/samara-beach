@@ -27,6 +27,7 @@ import {
   IconeProduto,
   IconeSair,
   IconeEmpresa,
+  IconeEquipe,
 } from "@/components/ui/icons";
 import type { PapelInterno } from "@/lib/types";
 
@@ -167,6 +168,12 @@ const NAV: NavGrupo[] = [
         href: "/empresa",
         label: "Empresa",
         icone: <IconeEmpresa className={tamanhoIcone} />,
+        papeis: ["admin"],
+      },
+      {
+        href: "/usuarios",
+        label: "Usuários",
+        icone: <IconeEquipe className={tamanhoIcone} />,
         papeis: ["admin"],
       },
       {

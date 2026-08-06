@@ -48,6 +48,19 @@ class User(AbstractUser):
         blank=True,
     )
 
+    # --- Dados da pessoa (equipe interna) ---------------------------------
+    # Ficam aqui, e não num model Funcionario à parte, porque o cadastro é de
+    # quem loga no sistema: separar duplicaria nome/e-mail em duas tabelas.
+    cpf = models.CharField(max_length=14, blank=True)
+    telefone = models.CharField(max_length=20, blank=True)
+    cargo = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text=_("Cargo exibido no painel, ex.: Vendedora. Não afeta permissões."),
+    )
+    data_admissao = models.DateField(null=True, blank=True)
+    observacoes = models.TextField(blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -62,6 +75,11 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
+
+    @property
+    def nome_exibicao(self) -> str:
+        """Nome completo quando existe; senão o e-mail — nunca vazio."""
+        return self.get_full_name().strip() or self.email
 
     @property
     def is_interno(self) -> bool:

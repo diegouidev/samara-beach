@@ -132,6 +132,15 @@ export const IconeMargem = (p: Props) => (
   </Base>
 );
 
+export const IconeEquipe = (p: Props) => (
+  <Base {...p}>
+    <path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20" />
+    <circle cx="9" cy="7" r="3.5" />
+    <path d="M22 20v-1.5a4 4 0 0 0-3-3.85" />
+    <path d="M16 3.6a4 4 0 0 1 0 7" />
+  </Base>
+);
+
 export const IconeEmpresa = (p: Props) => (
   <Base {...p}>
     <path d="M3 21h18" />

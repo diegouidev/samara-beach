@@ -7,10 +7,45 @@ export interface Usuario {
   email: string;
   first_name: string;
   last_name: string;
+  /** Nome completo, ou o e-mail quando não há nome. Nunca vazio. */
+  nome_exibicao: string;
+  cargo: string;
   tipo: "cliente" | "interno";
   papel: PapelInterno | null;
   is_interno: boolean;
   is_cliente: boolean;
+}
+
+/** Membro da equipe, na gestão de usuários (Configurações → Usuários). */
+export interface UsuarioInterno {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  nome_exibicao: string;
+  papel: PapelInterno;
+  cpf: string;
+  telefone: string;
+  cargo: string;
+  data_admissao: string | null;
+  observacoes: string;
+  is_active: boolean;
+  last_login: string | null;
+  created_at: string;
+}
+
+export interface NovoUsuarioInterno {
+  email: string;
+  senha: string;
+  first_name: string;
+  last_name: string;
+  papel: PapelInterno;
+  cpf?: string;
+  telefone?: string;
+  cargo?: string;
+  data_admissao?: string | null;
+  observacoes?: string;
+  is_active?: boolean;
 }
 
 export interface TokenResponse {
