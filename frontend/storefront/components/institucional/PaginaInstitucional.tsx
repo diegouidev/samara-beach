@@ -84,7 +84,15 @@ export function PaginaInstitucional({
         )}
 
         {(endereco || empresa?.horario_funcionamento) && (
-          <div className="mt-12 grid w-full gap-8 border-t border-black/5 pt-10 sm:grid-cols-2">
+          // Duas colunas só quando há os dois blocos: com um só, ele fica
+          // centralizado em vez de encostado à esquerda numa grade vazia.
+          <div
+            className={`mt-12 grid w-full gap-8 border-t border-black/5 pt-10 ${
+              endereco && empresa?.horario_funcionamento
+                ? "sm:grid-cols-2"
+                : "justify-items-center"
+            }`}
+          >
             {endereco && (
               <div>
                 <p className="text-sm font-semibold text-brand-ink">
