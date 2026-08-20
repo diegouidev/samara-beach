@@ -117,11 +117,20 @@ export function BuscaProduto({
                     </span>
                     <span
                       className={`block text-xs ${
-                        v.saldo > 0 ? "text-slate-400" : "text-red-600"
+                        v.saldo > 0 ? "text-panel-inkMuted" : "text-red-600"
                       }`}
                     >
                       {v.saldo > 0 ? `${v.saldo} em estoque` : "sem estoque"}
                     </span>
+                    {/* A peça está na loja e pode ser vendida no balcão — mas
+                        alguém já pediu online, e vender a última sem saber
+                        disso vira cancelamento depois. */}
+                    {(v.reservado ?? 0) > 0 && (
+                      <span className="mt-0.5 block text-xs font-medium text-amber-700">
+                        {v.reservado} reservado
+                        {v.reservado > 1 ? "s" : ""} online
+                      </span>
+                    )}
                   </span>
                 </button>
               </li>

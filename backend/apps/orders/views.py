@@ -10,7 +10,7 @@ from apps.accounts.models import PapelInterno
 from apps.common.permissions import HasInternalRole, LojaOnlineRequerida
 from apps.customers.models import Cliente
 
-from . import services
+from . import reservas, services
 from .models import Cupom, ItemPedido, Pedido, StatusPedido
 from .serializers import (
     AdicionarItemSerializer,
@@ -150,6 +150,9 @@ class PedidoViewSet(viewsets.ModelViewSet):
             raise ValidationError("O carrinho está vazio.")
 
         services.recalcular_totais(pedido)
+        # Segura o estoque antes de mudar o status: se faltar peça, o cliente
+        # descobre agora — e não depois de combinar tudo pelo WhatsApp.
+        reservas.reservar_itens(pedido)
         services.mudar_status(
             pedido, StatusPedido.AGUARDANDO_PAGAMENTO, usuario=request.user
         )

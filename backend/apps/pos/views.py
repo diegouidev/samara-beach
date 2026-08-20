@@ -317,6 +317,11 @@ class BuscaPDVView(APIView):
             )
         variacoes = variacoes.order_by("produto__nome", "tamanho")[:40]
 
+        # Reservas de pedidos online não bloqueiam a venda no balcão — a peça
+        # está aqui e a cliente está na frente. Mas o operador precisa saber
+        # que alguém já pediu, para não vender a última sem perceber.
+        from apps.orders.reservas import quantidade_reservada
+
         resultados = []
         for v in variacoes:
             imagem = next(
@@ -336,6 +341,7 @@ class BuscaPDVView(APIView):
                     "tamanho": v.tamanho,
                     "preco": v.preco_vigente,
                     "saldo": v.saldo,
+                    "reservado": quantidade_reservada(v.id),
                     "imagem": imagem,
                 }
             )

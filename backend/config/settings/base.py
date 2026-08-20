@@ -29,6 +29,10 @@ AUDIT_RETENCAO_INFO_DIAS = env.int("AUDIT_RETENCAO_INFO_DIAS", default=180)
 AUDIT_RETENCAO_ATENCAO_DIAS = env.int("AUDIT_RETENCAO_ATENCAO_DIAS", default=730)
 AUDIT_RETENCAO_CRITICO_DIAS = env.int("AUDIT_RETENCAO_CRITICO_DIAS", default=1825)
 
+# Por quantas horas um pedido online segura o estoque esperando pagamento.
+# Passado o prazo, a peça volta a ficar disponível sozinha.
+RESERVA_ESTOQUE_HORAS = env.int("RESERVA_ESTOQUE_HORAS", default=24)
+
 # --- Apps ---------------------------------------------------------------
 DJANGO_APPS = [
     "django.contrib.admin",

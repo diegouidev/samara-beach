@@ -250,4 +250,6 @@ class VariacaoPDVSerializer(serializers.Serializer):
     tamanho = serializers.CharField()
     preco = serializers.DecimalField(max_digits=10, decimal_places=2)
     saldo = serializers.IntegerField()
+    # Quanto deste saldo já está prometido a um pedido online não pago.
+    reservado = serializers.IntegerField(default=0)
     imagem = serializers.CharField(allow_null=True)

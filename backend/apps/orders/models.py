@@ -132,3 +132,38 @@ class ItemPedido(BaseModel):
     @property
     def subtotal(self):
         return self.quantidade * self.preco_unitario
+
+
+class ReservaEstoque(BaseModel):
+    """
+    Estoque preso por um pedido que ainda não foi pago.
+
+    Não é uma MovimentacaoEstoque: nada saiu da prateleira ainda. É um
+    "não conte com esta peça" temporário, que morre sozinho no prazo
+    (`expira_em`) se o pagamento não vier — ver apps.orders.reservas.
+    """
+
+    pedido = models.ForeignKey(
+        "orders.Pedido",
+        on_delete=models.CASCADE,
+        related_name="reservas",
+    )
+    variacao = models.ForeignKey(
+        "catalog.VariacaoProduto",
+        on_delete=models.CASCADE,
+        related_name="reservas",
+    )
+    quantidade = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    expira_em = models.DateTimeField(db_index=True)
+
+    class Meta:
+        verbose_name = _("reserva de estoque")
+        verbose_name_plural = _("reservas de estoque")
+        indexes = [
+            # A pergunta quente é sempre "quanto desta variação está preso
+            # agora?" — daí o índice composto com a validade.
+            models.Index(fields=["variacao", "expira_em"]),
+        ]
+
+    def __str__(self):
+        return f"{self.quantidade}x {self.variacao.sku} (pedido {self.pedido_id})"

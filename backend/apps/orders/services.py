@@ -120,6 +120,13 @@ def mudar_status(
         if pedido.cupom_id:
             Cupom.objects.filter(pk=pedido.cupom_id).update(usos=F("usos") + 1)
 
+    # A reserva existe só para segurar a peça até o pagamento. Confirmado
+    # (o estoque saiu de verdade) ou cancelado (a peça volta), ela sai.
+    if entrou_em_venda or novo_status == StatusPedido.CANCELADO:
+        from .reservas import liberar_reservas
+
+        liberar_reservas(pedido)
+
     if auditar:
         # Dentro da transação, e nunca no on_commit: ali o INSERT sairia numa
         # transação separada e um rollback deixaria o log órfão.
