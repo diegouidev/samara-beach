@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { lojaOnlineAtiva } from "@/lib/loja-online";
 import { listarProdutosParaVitrine, listarCategorias } from "@/lib/api";
 import { getBranding } from "@/lib/branding";
 import { ProductCard } from "@/components/produto/ProductCard";
@@ -53,6 +54,13 @@ const BENEFICIOS = [
 ];
 
 export default async function HomePage() {
+  // Loja desligada: o layout já renderiza a institucional no lugar desta
+  // página. Retornar cedo evita que ela consulte a API (que responde 503),
+  // porque o Next executa layout e página em paralelo.
+  // `null` em vez de notFound(): o 404 fica cacheado e não revalida quando
+  // a loja é religada.
+  if (!(await lojaOnlineAtiva())) return null;
+
   const [{ cards }, categorias, branding] = await Promise.all([
     listarProdutosParaVitrine({ ordering: "-created_at" }),
     listarCategorias(),

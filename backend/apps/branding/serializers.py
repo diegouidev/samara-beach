@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.common.permissions import loja_online_ativa
 from apps.common.serializers import RelativeImageField
 
 from .models import Branding
@@ -20,6 +21,13 @@ class BrandingSerializer(serializers.ModelSerializer):
     logo = RelativeImageField(read_only=True)
     favicon = RelativeImageField(read_only=True)
     hero_imagem = RelativeImageField(read_only=True)
+    # Kill switch da loja (env do backend, não campo do model): é por aqui que
+    # o storefront descobre se deve renderizar a loja ou a institucional.
+    # De propósito fora do BrandingUpdateSerializer — não se muda pelo painel.
+    loja_online_ativa = serializers.SerializerMethodField()
+
+    def get_loja_online_ativa(self, obj) -> bool:
+        return loja_online_ativa()
 
     class Meta:
         model = Branding
@@ -35,6 +43,7 @@ class BrandingSerializer(serializers.ModelSerializer):
             "hero_imagem",
             *HERO_FIELDS,
             "whatsapp",
+            "loja_online_ativa",
             "updated_at",
         ]
 

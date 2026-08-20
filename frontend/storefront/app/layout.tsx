@@ -13,6 +13,16 @@ export const viewport: Viewport = {
 // Metadata dinâmica (título + favicon) a partir do branding configurado.
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  // Loja desligada: não há catálogo para indexar, e a página é uma só.
+  if (!b.loja_online_ativa) {
+    return {
+      title: `${b.nome_loja} — Moda Praia`,
+      description:
+        "Visite nossa loja física ou fale com a gente pelo WhatsApp.",
+      icons: b.favicon ? { icon: b.favicon } : undefined,
+      robots: { index: true, follow: false },
+    };
+  }
   return {
     title: {
       default: `${b.nome_loja} — Moda Praia`,
@@ -39,7 +49,12 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        {/* Sem loja online não há conta de cliente — o provider nem monta. */}
+        {branding.loja_online_ativa ? (
+          <AuthProvider>{children}</AuthProvider>
+        ) : (
+          children
+        )}
       </body>
     </html>
   );

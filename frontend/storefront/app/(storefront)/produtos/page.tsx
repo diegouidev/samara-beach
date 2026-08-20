@@ -1,3 +1,4 @@
+import { lojaOnlineAtiva } from "@/lib/loja-online";
 import { listarProdutos, listarProdutosParaVitrine, listarCategorias } from "@/lib/api";
 import { ProductCard } from "@/components/produto/ProductCard";
 import { ProductFilters } from "@/components/filtros/ProductFilters";
@@ -30,6 +31,13 @@ export default async function ProdutosPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
+  // Loja desligada: o layout já renderiza a institucional no lugar desta
+  // página. Retornar cedo evita que ela consulte a API (que responde 503),
+  // porque o Next executa layout e página em paralelo.
+  // `null` em vez de notFound(): o 404 fica cacheado e não revalida quando
+  // a loja é religada.
+  if (!(await lojaOnlineAtiva())) return null;
+
   const sp = await searchParams;
   const [{ cards }, categorias, { cores, tamanhos }] = await Promise.all([
     listarProdutosParaVitrine({

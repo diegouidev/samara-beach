@@ -3,6 +3,9 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.common.exceptions import LojaOffline
+from apps.common.permissions import loja_online_ativa
+
 from .models import PapelInterno, TipoUsuario, User
 
 
@@ -224,6 +227,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        # O super() vem primeiro de propósito: credencial errada continua
+        # dando 401 genérico, sem revelar que a loja está desligada (e, por
+        # tabela, que aquele e-mail existe).
         data = super().validate(attrs)
+        # Com a loja online desligada, só a equipe interna entra — o endpoint
+        # de token é o mesmo para painel e storefront, então o corte é aqui.
+        if not self.user.is_interno and not loja_online_ativa():
+            raise LojaOffline()
         data["user"] = UserSerializer(self.user).data
         return data

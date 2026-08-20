@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import PapelInterno
-from apps.common.permissions import HasInternalRole
+from apps.common.permissions import HasInternalRole, LojaOnlineRequerida
 from apps.orders.models import StatusPedido
 from apps.suppliers.services import consultar_cep
 
@@ -25,13 +25,13 @@ class RegistroClienteView(CreateAPIView):
     """POST /api/clientes/registro/ — cadastro público de cliente."""
 
     serializer_class = RegistroClienteSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [LojaOnlineRequerida, permissions.AllowAny]
 
 
 class MeuPerfilView(APIView):
     """GET/PATCH /api/clientes/eu/ — cliente vê/edita o próprio perfil."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [LojaOnlineRequerida, permissions.IsAuthenticated]
 
     def _get_cliente(self, request):
         return Cliente.objects.filter(usuario=request.user).first()
@@ -120,7 +120,7 @@ class EnderecoViewSet(viewsets.ModelViewSet):
     """CRUD de endereços do próprio cliente autenticado."""
 
     serializer_class = EnderecoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [LojaOnlineRequerida, permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Endereco.objects.filter(cliente__usuario=self.request.user)

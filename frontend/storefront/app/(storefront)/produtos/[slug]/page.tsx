@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { lojaOnlineAtiva } from "@/lib/loja-online";
 import { buscarProdutoPorSlug, apiGet } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
 import { ProductDetail } from "@/components/produto/ProductDetail";
@@ -31,6 +32,9 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // generateMetadata roda antes do componente e não passa pelo guard dele —
+  // sem esta saída, a página de produto ainda consultaria a API desligada.
+  if (!(await lojaOnlineAtiva())) return {};
   const { slug } = await params;
   const { produto } = await buscarProdutoPorSlug(slug);
   if (!produto) return { title: "Produto não encontrado" };
@@ -45,6 +49,13 @@ export default async function ProdutoPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // Loja desligada: o layout já renderiza a institucional no lugar desta
+  // página. Retornar cedo evita que ela consulte a API (que responde 503),
+  // porque o Next executa layout e página em paralelo.
+  // `null` em vez de notFound(): o 404 fica cacheado e não revalida quando
+  // a loja é religada.
+  if (!(await lojaOnlineAtiva())) return null;
+
   const { slug } = await params;
   const { produto } = await buscarProdutoPorSlug(slug);
 

@@ -25,6 +25,11 @@ export interface Branding {
   hero_subtitulo: string;
   hero_cta_texto: string;
   hero_cta_link: string;
+  /**
+   * Kill switch da loja (env do backend). Falso → o storefront renderiza a
+   * página institucional no lugar da loja. A cliente não altera pelo painel.
+   */
+  loja_online_ativa: boolean;
   updated_at?: string;
 }
 
@@ -47,6 +52,10 @@ export const BRANDING_FALLBACK: Branding = {
     "Biquínis, maiôs, saídas e acessórios — com produção própria e curadoria especial. Encontre o seu look à beira-mar.",
   hero_cta_texto: "Ver coleção",
   hero_cta_link: "/produtos",
+  // Conservador de propósito: sem API não há como vender de qualquer forma
+  // (produtos e carrinho também falhariam). Uma institucional é melhor que
+  // uma vitrine vazia e quebrada.
+  loja_online_ativa: false,
 };
 
 /** Busca o branding (Server ou Client). Cai no fallback se a API falhar. */

@@ -4,7 +4,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import PapelInterno
-from apps.common.permissions import ReadOnlyOrInternalRole
+from apps.common.permissions import (
+    LojaOnlineRequerida,
+    ReadOnlyOrInternalRole,
+)
 
 
 class PodeAvaliar(BasePermission):
@@ -58,7 +61,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         )
     )
     serializer_class = CategoriaSerializer
-    permission_classes = [ReadOnlyOrInternalRole]
+    permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     lookup_field = "slug"
     filterset_fields = ["ativo", "categoria_pai", "destaque"]
@@ -82,7 +85,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         .prefetch_related("variacoes__imagens")
         .all()
     )
-    permission_classes = [ReadOnlyOrInternalRole]
+    permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     lookup_field = "slug"
     filterset_class = ProdutoFilter
@@ -103,7 +106,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
 class VariacaoProdutoViewSet(viewsets.ModelViewSet):
     queryset = VariacaoProduto.objects.select_related("produto").prefetch_related("imagens")
     serializer_class = VariacaoProdutoSerializer
-    permission_classes = [ReadOnlyOrInternalRole]
+    permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     filterset_fields = ["produto", "cor", "tamanho", "ativo"]
     search_fields = ["sku", "produto__nome"]
@@ -113,7 +116,7 @@ class VariacaoProdutoViewSet(viewsets.ModelViewSet):
 class ImagemProdutoViewSet(viewsets.ModelViewSet):
     queryset = ImagemProduto.objects.all()
     serializer_class = ImagemProdutoSerializer
-    permission_classes = [ReadOnlyOrInternalRole]
+    permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     filterset_fields = ["variacao"]
 
@@ -121,7 +124,7 @@ class ImagemProdutoViewSet(viewsets.ModelViewSet):
 class TabelaMedidasViewSet(viewsets.ModelViewSet):
     queryset = TabelaMedidas.objects.all()
     serializer_class = TabelaMedidasSerializer
-    permission_classes = [ReadOnlyOrInternalRole]
+    permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
     write_roles = CATALOG_WRITE_ROLES
     filterset_fields = ["categoria", "produto"]
 
@@ -137,7 +140,7 @@ class AvaliacaoViewSet(viewsets.ModelViewSet):
 
     queryset = Avaliacao.objects.select_related("produto", "cliente")
     serializer_class = AvaliacaoSerializer
-    permission_classes = [PodeAvaliar]
+    permission_classes = [LojaOnlineRequerida, PodeAvaliar]
     filterset_fields = ["produto", "nota", "aprovada"]
     ordering_fields = ["created_at", "nota"]
 

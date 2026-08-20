@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import PapelInterno
-from apps.common.permissions import HasInternalRole
+from apps.common.permissions import HasInternalRole, LojaOnlineRequerida
 from apps.customers.models import Cliente
 
 from . import services
@@ -43,7 +43,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = PedidoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [LojaOnlineRequerida, IsAuthenticated]
     filterset_fields = ["status", "canal"]
     search_fields = [
         "id",

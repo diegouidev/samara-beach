@@ -17,6 +17,12 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default="unsafe-dev-secret-key")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
+# Kill switch da loja online. Só quem tem SSH na VPS muda (backend/.env).
+# Desligada: o storefront vira uma página institucional e a API bloqueia todo
+# acesso anônimo/de cliente. O sistema interno (painel, PDV, caixa, estoque,
+# relatórios) segue 100% funcional.
+LOJA_ONLINE_ATIVA = env.bool("LOJA_ONLINE_ATIVA", default=True)
+
 # --- Apps ---------------------------------------------------------------
 DJANGO_APPS = [
     "django.contrib.admin",
