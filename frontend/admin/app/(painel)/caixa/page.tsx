@@ -6,6 +6,7 @@ import * as api from "@/lib/api";
 import { formatBRL, formatData } from "@/lib/format";
 import { Alerta, Badge, Button, Card, EmptyState, Field, PageHeader, Stat, inputClass } from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
+import { IconeCaixa } from "@/components/ui/icons";
 import type { ResumoCaixa, SessaoCaixa } from "@/lib/types";
 
 const METODO_LABEL: Record<string, string> = {
@@ -192,37 +193,95 @@ function AbrirCaixaCard({ onAberto }: { onAberto: () => void }) {
     }
   }
 
+  const numero = Number(valor) || 0;
+
   return (
-    <Card className="max-w-lg">
-      <h2 className="mb-1 font-semibold text-panel-ink">Abrir caixa</h2>
-      <p className="mb-4 text-sm text-slate-500">
-        Informe quanto de troco está sendo deixado na gaveta. Esse valor entra
-        na conferência do fechamento.
-      </p>
-      <div className="space-y-4">
-        <Field label="Troco inicial (R$)">
-          <input
-            className={inputClass}
-            value={valor}
-            onChange={(e) => setValor(e.target.value.replace(",", "."))}
-            placeholder="100.00"
-            inputMode="decimal"
-            autoFocus
-          />
-        </Field>
-        <Field label="Observações (opcional)">
-          <input
-            className={inputClass}
-            value={obs}
-            onChange={(e) => setObs(e.target.value)}
-          />
-        </Field>
-        {erro && <p className="text-sm text-red-600">{erro}</p>}
-        <Button onClick={abrir} disabled={enviando}>
-          {enviando ? "Abrindo…" : "Abrir caixa"}
-        </Button>
+    <div className="mx-auto max-w-xl">
+      <div className="overflow-hidden rounded-2xl border border-panel-border bg-panel-surface shadow-card">
+        {/* Faixa da marca: o começo do turno merece um marco visual. */}
+        <div className="flex items-center gap-4 border-b border-panel-border bg-panel-accent/5 px-7 py-6">
+          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-panel-accent/10 text-panel-accent">
+            <IconeCaixa className="h-6 w-6" />
+          </span>
+          <div>
+            <h2 className="text-lg font-semibold text-panel-ink">
+              Abrir o caixa
+            </h2>
+            <p className="text-sm text-panel-inkSoft">
+              Conte o troco da gaveta antes de começar a vender.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-6 px-7 py-7">
+          <div>
+            <label
+              htmlFor="troco-inicial"
+              className="text-[13px] font-medium text-panel-inkSoft"
+            >
+              Troco inicial
+            </label>
+            {/* Campo grande: é o único número desta tela, e vai ser digitado
+                tanto no teclado quanto no toque. */}
+            <div className="mt-2 flex items-center gap-3 rounded-2xl border border-panel-borderStrong bg-panel-surface px-5 transition focus-within:border-panel-accent focus-within:ring-4 focus-within:ring-panel-accent/15">
+              <span className="text-2xl font-medium text-panel-inkMuted">
+                R$
+              </span>
+              <input
+                id="troco-inicial"
+                className="h-16 w-full bg-transparent text-3xl font-semibold tabular-nums text-panel-ink placeholder:text-panel-inkMuted/50 focus:outline-none"
+                value={valor}
+                onChange={(e) => setValor(e.target.value.replace(",", "."))}
+                placeholder="0,00"
+                inputMode="decimal"
+                autoFocus
+              />
+            </div>
+
+            {/* Atalhos para os valores de sempre — evita digitar no tablet. */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[50, 100, 150, 200, 300].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setValor(String(v))}
+                  className={`h-11 min-w-[72px] rounded-xl border px-4 text-sm font-medium transition ${
+                    numero === v
+                      ? "border-panel-accent bg-panel-accent text-white"
+                      : "border-panel-border text-panel-inkSoft hover:border-panel-borderStrong hover:bg-panel-surfaceMuted"
+                  }`}
+                >
+                  {formatBRL(v)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Field label="Observações (opcional)">
+            <input
+              className={inputClass}
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              placeholder="Ex.: troco conferido com a gerente"
+            />
+          </Field>
+
+          {erro && <Alerta tone="erro">{erro}</Alerta>}
+
+          <Button
+            className="h-14 w-full text-base"
+            onClick={abrir}
+            disabled={enviando}
+          >
+            {enviando ? "Abrindo…" : `Abrir caixa com ${formatBRL(numero)}`}
+          </Button>
+
+          <p className="text-center text-xs text-panel-inkMuted">
+            Este valor entra na conferência do fechamento do turno.
+          </p>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
 

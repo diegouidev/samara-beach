@@ -7,6 +7,7 @@
  */
 "use client";
 
+import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
 
 export function Card({
@@ -16,9 +17,12 @@ export function Card({
   subtitle,
   action,
   bare = false,
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  /** Âncora para rolagem (ex.: pular para um formulário). */
+  id?: string;
   /** Cabeçalho opcional do bloco. */
   title?: string;
   subtitle?: string;
@@ -28,6 +32,7 @@ export function Card({
 }) {
   return (
     <section
+      id={id}
       className={`overflow-hidden rounded-2xl border border-panel-border bg-panel-surface shadow-card ${className}`}
     >
       {(title || action) && (
@@ -80,12 +85,15 @@ export function Stat({
   hint,
   icon,
   tone = "neutral",
+  href,
 }: {
   label: string;
   value: string;
   hint?: string;
   icon?: ReactNode;
   tone?: "neutral" | "accent" | "positivo" | "atencao";
+  /** Quando informado, o card inteiro vira link para a tela que resolve o número. */
+  href?: string;
 }) {
   const tones: Record<string, string> = {
     neutral: "bg-slate-100 text-slate-500",
@@ -94,8 +102,8 @@ export function Stat({
     atencao: "bg-amber-50 text-amber-600",
   };
 
-  return (
-    <div className="rounded-2xl border border-panel-border bg-panel-surface p-5 shadow-card transition hover:shadow-cardHover">
+  const conteudo = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-panel-inkMuted">{label}</p>
         {icon && (
@@ -109,9 +117,30 @@ export function Stat({
       <p className="tabular mt-3 text-2xl font-semibold tracking-tight text-panel-ink">
         {value}
       </p>
-      {hint && <p className="mt-1 text-xs text-panel-inkMuted">{hint}</p>}
-    </div>
+      {hint && (
+        <p className="mt-1 flex items-center gap-1 text-xs text-panel-inkMuted">
+          {hint}
+          {href && <span aria-hidden="true">→</span>}
+        </p>
+      )}
+    </>
   );
+
+  const base =
+    "block rounded-2xl border border-panel-border bg-panel-surface p-5 shadow-card transition";
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={`${base} hover:-translate-y-0.5 hover:border-panel-borderStrong hover:shadow-cardHover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-panel-accent focus-visible:ring-offset-2`}
+      >
+        {conteudo}
+      </Link>
+    );
+  }
+
+  return <div className={`${base} hover:shadow-cardHover`}>{conteudo}</div>;
 }
 
 const BADGE_STYLES: Record<string, string> = {

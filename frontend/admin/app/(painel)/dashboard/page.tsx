@@ -70,9 +70,13 @@ function DashboardContent() {
         <Stat
           label="SKUs em alerta"
           value={String(baixo.length)}
-          hint={baixo.length > 0 ? "abaixo do estoque mínimo" : "estoque saudável"}
+          hint={
+            baixo.length > 0 ? "Ver e repor estoque" : "estoque saudável"
+          }
           icon={<IconeAlerta className="h-[18px] w-[18px]" />}
           tone={baixo.length > 0 ? "atencao" : "neutral"}
+          // Com SKUs em falta, o card leva direto para onde se resolve.
+          href={baixo.length > 0 ? "/estoque?alerta=1" : undefined}
         />
       </div>
 
