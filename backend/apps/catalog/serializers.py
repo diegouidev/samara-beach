@@ -276,10 +276,40 @@ class ProdutoListSerializer(serializers.ModelSerializer):
 
 
 class AvaliacaoSerializer(serializers.ModelSerializer):
+    # Sem estes nomes, a moderação no painel decide às cegas: a tela mostrava
+    # nota e comentário, mas não sobre qual produto nem de quem.
+    produto_nome = serializers.CharField(source="produto.nome", read_only=True)
+    produto_slug = serializers.CharField(source="produto.slug", read_only=True)
+    cliente_nome = serializers.SerializerMethodField()
+
+    def get_cliente_nome(self, obj) -> str:
+        cliente = getattr(obj.cliente, "cliente", None)
+        if cliente is not None:
+            return cliente.nome
+        return getattr(obj.cliente, "nome_exibicao", "") or ""
+
     class Meta:
         model = Avaliacao
-        fields = ["id", "produto", "cliente", "nota", "comentario", "aprovada", "created_at"]
+        fields = [
+            "id",
+            "produto",
+            "produto_nome",
+            "produto_slug",
+            "cliente",
+            "cliente_nome",
+            "nota",
+            "comentario",
+            "aprovada",
+            "created_at",
+        ]
         # `aprovada` é gravável (moderação por interno via PATCH); no create,
         # perform_create força aprovada=False. A permissão PodeAvaliar restringe
         # PATCH a atendimento/admin.
-        read_only_fields = ["id", "cliente", "created_at"]
+        read_only_fields = [
+            "id",
+            "cliente",
+            "cliente_nome",
+            "produto_nome",
+            "produto_slug",
+            "created_at",
+        ]

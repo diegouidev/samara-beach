@@ -445,7 +445,10 @@ function EmpresaContent() {
       </div>
 
       {/* Barra de ação fixa: o formulário é longo e o botão não pode ficar longe. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-panel-border bg-panel-surface/95 backdrop-blur lg:pl-64">
+      {/* Fixa só na área de conteúdo: `left-60` no desktop deixa o rodapé do
+          menu (perfil e sair) livre — antes a barra atravessava a tela e
+          cobria o clique. */}
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-panel-border bg-panel-surface/95 backdrop-blur lg:left-60">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
           <span className="text-xs text-panel-inkMuted">
             {sujo ? "Alterações não salvas" : "Tudo salvo"}

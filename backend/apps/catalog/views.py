@@ -152,7 +152,11 @@ class AvaliacaoViewSet(viewsets.ModelViewSet):
     - Editar/excluir/aprovar: interno atendimento/admin.
     """
 
-    queryset = Avaliacao.objects.select_related("produto", "cliente")
+    # `cliente__cliente` é o perfil (nome legível) — sem ele, o serializer
+    # dispararia uma query por linha da moderação.
+    queryset = Avaliacao.objects.select_related(
+        "produto", "cliente", "cliente__cliente"
+    )
     serializer_class = AvaliacaoSerializer
     permission_classes = [LojaOnlineRequerida, PodeAvaliar]
     filterset_fields = ["produto", "nota", "aprovada"]

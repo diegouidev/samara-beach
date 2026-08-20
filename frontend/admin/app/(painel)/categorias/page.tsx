@@ -5,7 +5,17 @@ import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import { slugify } from "@/lib/masks";
 import { resolveImagem } from "@/lib/format";
-import { Alerta, Badge, Button, Card, EmptyState, Field, PageHeader, inputClass } from "@/components/ui";
+import {
+  Alerta,
+  Badge,
+  Button,
+  Card,
+  ConfirmarExclusao,
+  EmptyState,
+  Field,
+  PageHeader,
+  inputClass,
+} from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import type { Categoria } from "@/lib/types";
 
@@ -18,6 +28,8 @@ export default function CategoriasPage() {
 }
 
 function CategoriasContent() {
+  const [excluindo, setExcluindo] = useState<Categoria | null>(null);
+  const [excluindoAgora, setExcluindoAgora] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -50,14 +62,18 @@ function CategoriasContent() {
     carregar();
   }
 
-  async function excluir(categoria: Categoria) {
-    if (!confirm(`Excluir a categoria "${categoria.nome}"?`)) return;
+  async function confirmarExclusao() {
+    if (!excluindo) return;
+    setExcluindoAgora(true);
     try {
-      await api.excluirCategoria(categoria.slug);
+      await api.excluirCategoria(excluindo.slug);
+      setExcluindo(null);
       avisar("Categoria excluída.");
       carregar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível excluir.");
+    } finally {
+      setExcluindoAgora(false);
     }
   }
 
@@ -178,7 +194,7 @@ function CategoriasContent() {
                         {c.ativo ? "Desativar" : "Ativar"}
                       </button>
                       <button
-                        onClick={() => excluir(c)}
+                        onClick={() => setExcluindo(c)}
                         className="text-red-500 hover:underline"
                       >
                         Excluir
@@ -192,6 +208,26 @@ function CategoriasContent() {
           </div>
         )}
       </Card>
+
+      <ConfirmarExclusao
+        aberto={excluindo !== null}
+        titulo="Excluir categoria"
+        processando={excluindoAgora}
+        onFechar={() => setExcluindo(null)}
+        onConfirmar={confirmarExclusao}
+      >
+        A categoria <strong>{excluindo?.nome}</strong> será removida do menu da
+        loja e dos filtros.
+        {(excluindo?.total_produtos ?? 0) > 0 && (
+          <>
+            {" "}
+            Os <strong>{excluindo?.total_produtos} produto(s)</strong> dela
+            continuam cadastrados, mas ficam sem categoria.
+          </>
+        )}{" "}
+        Para tirá-la da loja sem perder a organização, use{" "}
+        <strong>Desativar</strong>.
+      </ConfirmarExclusao>
     </div>
   );
 }

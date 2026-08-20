@@ -385,7 +385,10 @@ export interface Cupom {
 export interface Avaliacao {
   id: string;
   produto: string;
+  produto_nome: string;
+  produto_slug: string;
   cliente: string | null;
+  cliente_nome: string;
   nota: number;
   comentario: string;
   aprovada: boolean;
@@ -465,6 +468,8 @@ export interface VariacaoPDV {
   tamanho: string;
   preco: string;
   saldo: number;
+  /** Quanto do saldo já está prometido a um pedido online não pago. */
+  reservado: number;
   imagem: string | null;
 }
 

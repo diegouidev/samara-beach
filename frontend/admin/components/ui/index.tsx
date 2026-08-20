@@ -324,6 +324,45 @@ export function Modal({
 }
 
 /** Estado vazio padrão — evita a "tabela vazia" seca. */
+/**
+ * Confirmação de ação destrutiva.
+ *
+ * Substitui o `confirm()` do navegador: mantém a linguagem do sistema, cabe
+ * explicar o que se perde e o botão diz exatamente o que vai acontecer.
+ */
+export function ConfirmarExclusao({
+  aberto,
+  titulo,
+  onFechar,
+  onConfirmar,
+  processando = false,
+  rotuloConfirmar = "Excluir",
+  children,
+}: {
+  aberto: boolean;
+  titulo: string;
+  onFechar: () => void;
+  onConfirmar: () => void;
+  processando?: boolean;
+  rotuloConfirmar?: string;
+  /** O que se perde — escreva a consequência, não "tem certeza?". */
+  children: ReactNode;
+}) {
+  return (
+    <Modal aberto={aberto} titulo={titulo} largura="max-w-md" onFechar={onFechar}>
+      <div className="text-sm leading-relaxed text-panel-inkSoft">{children}</div>
+      <div className="mt-6 flex justify-end gap-2">
+        <Button variant="outline" onClick={onFechar} disabled={processando}>
+          Cancelar
+        </Button>
+        <Button variant="danger" onClick={onConfirmar} disabled={processando}>
+          {processando ? "Excluindo…" : rotuloConfirmar}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
 export function EmptyState({
   titulo,
   descricao,

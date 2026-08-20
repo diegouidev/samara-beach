@@ -9,7 +9,18 @@ import {
   mascaraCNPJ,
   mascaraTelefone,
 } from "@/lib/masks";
-import { Alerta, Badge, Button, Card, EmptyState, Field, PageHeader, inputClass, textareaClass } from "@/components/ui";
+import {
+  Alerta,
+  Badge,
+  Button,
+  Card,
+  ConfirmarExclusao,
+  EmptyState,
+  Field,
+  PageHeader,
+  inputClass,
+  textareaClass,
+} from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import type { Fornecedor } from "@/lib/types";
 
@@ -22,6 +33,8 @@ export default function FornecedoresPage() {
 }
 
 function FornecedoresContent() {
+  const [excluindo, setExcluindo] = useState<Fornecedor | null>(null);
+  const [excluindoAgora, setExcluindoAgora] = useState(false);
   const [lista, setLista] = useState<Fornecedor[]>([]);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState<Fornecedor | null>(null);
@@ -50,10 +63,12 @@ function FornecedoresContent() {
     carregar();
   }
 
-  async function excluir(f: Fornecedor) {
-    if (!confirm(`Excluir o fornecedor "${f.nome}"?`)) return;
+  async function confirmarExclusao() {
+    if (!excluindo) return;
+    setExcluindoAgora(true);
     try {
-      await api.excluirFornecedor(f.id);
+      await api.excluirFornecedor(excluindo.id);
+      setExcluindo(null);
       avisar("Fornecedor excluído.");
       carregar();
     } catch (e) {
@@ -62,6 +77,9 @@ function FornecedoresContent() {
           ? e.message
           : "Não foi possível excluir (pode haver compras vinculadas).",
       );
+      setExcluindo(null);
+    } finally {
+      setExcluindoAgora(false);
     }
   }
 
@@ -205,7 +223,7 @@ function FornecedoresContent() {
                         {f.ativo ? "Desativar" : "Ativar"}
                       </button>
                       <button
-                        onClick={() => excluir(f)}
+                        onClick={() => setExcluindo(f)}
                         className="text-red-500 hover:underline"
                       >
                         Excluir
@@ -219,6 +237,18 @@ function FornecedoresContent() {
           </div>
         )}
       </Card>
+
+      <ConfirmarExclusao
+        aberto={excluindo !== null}
+        titulo="Excluir fornecedor"
+        processando={excluindoAgora}
+        onFechar={() => setExcluindo(null)}
+        onConfirmar={confirmarExclusao}
+      >
+        <strong>{excluindo?.nome}</strong> sai da lista de fornecedores. Se
+        houver compras ou contas ligadas a ele, a exclusão é recusada — nesse
+        caso, use <strong>Desativar</strong>.
+      </ConfirmarExclusao>
     </div>
   );
 }

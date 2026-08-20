@@ -3,7 +3,13 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as api from "@/lib/api";
-import { Alerta, Button, Card, PageHeader } from "@/components/ui";
+import {
+  Alerta,
+  Button,
+  Card,
+  ConfirmarExclusao,
+  PageHeader,
+} from "@/components/ui";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { ProdutoForm } from "@/components/produtos/ProdutoForm";
 import { VariacaoManager } from "@/components/produtos/VariacaoManager";
@@ -23,6 +29,9 @@ export default function EditarProdutoPage({
 }
 
 function EditarConteudo({ slug }: { slug: string }) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [excluindoAgora, setExcluindoAgora] = useState(false);
+  const [erroExclusao, setErroExclusao] = useState<string | null>(null);
   const router = useRouter();
   const [produto, setProduto] = useState<Produto | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -45,11 +54,18 @@ function EditarConteudo({ slug }: { slug: string }) {
     return <p className="text-slate-400">Carregando…</p>;
   }
 
-  async function excluir() {
+  async function confirmarExclusao() {
     if (!produto) return;
-    if (!confirm(`Excluir "${produto.nome}"?`)) return;
-    await api.excluirProduto(produto.slug);
-    router.push("/produtos");
+    setExcluindoAgora(true);
+    try {
+      await api.excluirProduto(produto.slug);
+      router.push("/produtos");
+    } catch (e) {
+      setErroExclusao(
+        e instanceof Error ? e.message : "Não foi possível excluir.",
+      );
+      setExcluindoAgora(false);
+    }
   }
 
   return (
@@ -67,7 +83,7 @@ function EditarConteudo({ slug }: { slug: string }) {
             >
               Ver na loja ↗
             </a>
-            <Button variant="danger" onClick={excluir}>
+            <Button variant="danger" onClick={() => setConfirmando(true)}>
               Excluir
             </Button>
           </div>
@@ -101,6 +117,24 @@ function EditarConteudo({ slug }: { slug: string }) {
           <VariacaoManager key={produto.id} produto={produto} />
         </Card>
       </div>
+
+      <ConfirmarExclusao
+        aberto={confirmando}
+        titulo="Excluir produto"
+        processando={excluindoAgora}
+        onFechar={() => {
+          setConfirmando(false);
+          setErroExclusao(null);
+        }}
+        onConfirmar={confirmarExclusao}
+      >
+        <strong>{produto.nome}</strong> sai da loja junto com{" "}
+        <strong>{produto.variacoes.length} variação(ões)</strong> e suas
+        imagens. O histórico de vendas é preservado.
+        {erroExclusao && (
+          <span className="mt-3 block text-red-600">{erroExclusao}</span>
+        )}
+      </ConfirmarExclusao>
     </div>
   );
 }
