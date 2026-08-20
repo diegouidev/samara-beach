@@ -45,6 +45,18 @@ function PedidosContent() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  // Pedidos com os itens à mostra. Quem separa precisa ver o que vai na
+  // sacola sem trocar de tela.
+  const [abertos, setAbertos] = useState<Set<string>>(new Set());
+
+  function alternar(id: string) {
+    setAbertos((prev) => {
+      const novo = new Set(prev);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  }
 
   // Filtros
   const [busca, setBusca] = useState("");
@@ -166,7 +178,7 @@ function PedidosContent() {
               </tr>
             </thead>
             <tbody>
-              {pedidos.map((p) => (
+              {pedidos.flatMap((p) => [
                 <tr key={p.id}>
                   <td className="font-mono text-xs">
                     #{p.id.slice(0, 8)}
@@ -187,7 +199,23 @@ function PedidosContent() {
                     </Badge>
                   </td>
                   <td>{formatData(p.created_at)}</td>
-                  <td>{p.itens.length}</td>
+                  <td>
+                    <button
+                      onClick={() => alternar(p.id)}
+                      aria-expanded={abertos.has(p.id)}
+                      className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-panel-inkSoft transition hover:bg-panel-surfaceMuted hover:text-panel-ink"
+                    >
+                      {p.itens.length}
+                      <span
+                        aria-hidden="true"
+                        className={`text-[10px] transition-transform ${
+                          abertos.has(p.id) ? "rotate-180" : ""
+                        }`}
+                      >
+                        ▼
+                      </span>
+                    </button>
+                  </td>
                   <td className="font-medium">{formatBRL(p.total)}</td>
                   <td>
                     <Badge tone={TONE[p.status]}>
@@ -208,13 +236,92 @@ function PedidosContent() {
                       ))}
                     </div>
                   </td>
-                </tr>
-              ))}
+                </tr>,
+                abertos.has(p.id) && (
+                  <tr key={`${p.id}-itens`} className="bg-panel-surfaceMuted/60">
+                    <td colSpan={8} className="px-5 py-4">
+                      <ItensDoPedido pedido={p} />
+                    </td>
+                  </tr>
+                ),
+              ])}
             </tbody>
           </table>
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+
+/**
+ * Itens de um pedido, para separação. SKU em destaque porque é o que se
+ * procura na prateleira — e o subtotal fecha com o total da linha de cima.
+ */
+function ItensDoPedido({ pedido }: { pedido: Pedido }) {
+  if (pedido.itens.length === 0) {
+    return (
+      <p className="text-sm text-panel-inkMuted">Este pedido não tem itens.</p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <ul className="divide-y divide-panel-border overflow-hidden rounded-xl border border-panel-border bg-panel-surface">
+        {pedido.itens.map((item) => (
+          <li
+            key={item.id}
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3"
+          >
+            <span className="flex h-7 min-w-[28px] items-center justify-center rounded-lg bg-panel-accent/10 px-2 text-sm font-semibold tabular-nums text-panel-accent">
+              {item.quantidade}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-panel-ink">
+                {item.produto_nome}
+              </span>
+              <span className="block font-mono text-xs text-panel-inkMuted">
+                {item.sku}
+              </span>
+            </span>
+            <span className="text-right text-sm tabular-nums text-panel-inkSoft">
+              {formatBRL(item.preco_unitario)}
+              {item.quantidade > 1 && (
+                <span className="block text-xs text-panel-inkMuted">cada</span>
+              )}
+            </span>
+            <span className="w-24 text-right text-sm font-medium tabular-nums text-panel-ink">
+              {formatBRL(item.subtotal)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <a
+          href={`/admin/separacao/${pedido.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-lg border border-panel-borderStrong px-3 py-1.5 text-xs font-medium text-panel-inkSoft transition hover:border-panel-accent hover:text-panel-accent"
+        >
+          Imprimir separação ↗
+        </a>
+        <span className="text-panel-inkMuted">
+          {pedido.cupom_codigo && (
+            <>
+              Cupom <span className="font-mono">{pedido.cupom_codigo}</span> ·{" "}
+            </>
+          )}
+          {Number(pedido.desconto) > 0 && (
+            <>Desconto de {formatBRL(pedido.desconto)} · </>
+          )}
+          {Number(pedido.frete) > 0 && <>Frete {formatBRL(pedido.frete)}</>}
+        </span>
+        <span className="font-semibold tabular-nums text-panel-ink">
+          Total {formatBRL(pedido.total)}
+        </span>
+      </div>
     </div>
   );
 }

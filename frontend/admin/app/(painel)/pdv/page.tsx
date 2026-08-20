@@ -341,7 +341,7 @@ function PDVContent() {
       {/* Barra de fechamento no tablet/mobile: o total e o botão de finalizar
           não podem depender de rolagem numa tela de balcão. */}
       {itens.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-panel-border bg-panel-surface/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgb(15_23_42/0.2)] backdrop-blur xl:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-panel-border bg-panel-surface/95 px-4 py-3 shadow-[0_-4px_16px_-8px_rgb(15_23_42/0.2)] backdrop-blur xl:hidden">
           <div className="mx-auto flex max-w-3xl items-center gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-xs text-panel-inkMuted">

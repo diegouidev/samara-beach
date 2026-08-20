@@ -318,6 +318,11 @@ export function listarPedidos(params: Record<string, string> = {}) {
   return paginateAll<Pedido>(`/api/pedidos/${qs ? `?${qs}` : ""}`);
 }
 
+/** Um pedido com seus itens — usado na comanda de separação. */
+export function buscarPedido(id: string) {
+  return request<Pedido>(`/api/pedidos/${id}/`);
+}
+
 export function mudarStatusPedido(id: string, status: StatusPedido) {
   return request<Pedido>(`/api/pedidos/${id}/mudar-status/`, {
     method: "POST",
