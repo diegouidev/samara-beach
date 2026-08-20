@@ -518,3 +518,107 @@ def test_resultado_desconta_devolucao_custo_e_despesas(api, admin_user, variacao
     assert Decimal(r["despesas"]) == Decimal("80.00")
     assert Decimal(r["resultado"]) == Decimal("0.00")
     assert r["despesas_por_categoria"][0]["categoria"] == "energia"
+
+
+# =========================================================================
+# Auditoria
+# =========================================================================
+
+
+def test_venda_no_pdv_nao_duplica_auditoria_de_status(api, admin_user, variacao):
+    """
+    A venda de balcão nasce ENTREGUE. Registrar a venda E a transição de
+    status seria duas linhas para o mesmo ato — daí o `auditar=False`.
+    """
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    _abrir(api)
+    _vender(api, variacao, [{"metodo": "dinheiro", "valor": "100.00",
+                             "valor_recebido": "100.00"}])
+
+    assert RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.MUDANCA_STATUS
+    ).count() == 0
+    assert RegistroAuditoria.objects.filter(acao=AcaoAuditoria.VENDA).count() == 1
+
+
+def test_fechamento_por_admin_marca_caixa_de_terceiro(api, admin_user, variacao):
+    """
+    A view deixa o admin fechar o caixa de outro operador — até agora isso
+    não deixava nenhum rastro.
+    """
+    from apps.accounts.models import PapelInterno, TipoUsuario, User
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+    from apps.pos import services
+
+    operador = User.objects.create_user(
+        email="operador@test.com", password="senha12345",
+        tipo=TipoUsuario.INTERNO, papel=PapelInterno.ATENDIMENTO,
+    )
+    sessao = services.abrir_caixa(operador, "100.00")
+    services.fechar_caixa(sessao, "100.00", "", usuario=admin_user)
+
+    reg = RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.FECHAMENTO_CAIXA
+    ).first()
+    assert reg.usuario == admin_user
+    assert reg.dados["fechado_por_terceiro"] is True
+
+
+def test_fechamento_pelo_proprio_operador_nao_marca_terceiro(admin_user):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+    from apps.pos import services
+
+    sessao = services.abrir_caixa(admin_user, "100.00")
+    services.fechar_caixa(sessao, "100.00", "", usuario=admin_user)
+
+    reg = RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.FECHAMENTO_CAIXA
+    ).first()
+    assert reg.dados["fechado_por_terceiro"] is False
+
+
+def test_cancelamento_registra_mesmo_sem_caixa_aberto(api, admin_user, variacao):
+    """
+    Sem caixa aberto não há MovimentoCaixa — antes, o cancelamento não
+    deixava rastro de autoria nenhum.
+    """
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+    from apps.orders.models import Pedido
+    from apps.pos import services
+
+    auth(api, admin_user)
+    _abrir(api)
+    _vender(api, variacao, [{"metodo": "dinheiro", "valor": "100.00",
+                             "valor_recebido": "100.00"}])
+    pedido = Pedido.objects.latest("created_at")
+
+    # Fecha o caixa: o cancelamento acontece fora de qualquer turno aberto.
+    sessao = SessaoCaixa.objects.get(status=StatusSessaoCaixa.ABERTA)
+    services.fechar_caixa(sessao, "200.00", "", usuario=admin_user)
+
+    services.cancelar_venda(pedido, admin_user, "Cliente desistiu")
+
+    reg = RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.CANCELAMENTO_VENDA
+    ).first()
+    assert reg is not None
+    assert reg.usuario == admin_user
+    assert reg.dados["estornou_no_caixa"] is False
+
+
+def test_sangria_gera_auditoria(api, admin_user):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    resposta = _abrir(api)
+    sessao_id = resposta.json()["id"]
+    api.post(
+        f"/api/caixa/sessoes/{sessao_id}/sangria/",
+        {"valor": "50.00", "motivo": "Depósito no banco"},
+        format="json",
+    )
+    reg = RegistroAuditoria.objects.filter(acao=AcaoAuditoria.SANGRIA).first()
+    assert reg is not None
+    assert reg.dados["motivo"] == "Depósito no banco"

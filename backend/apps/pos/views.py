@@ -93,6 +93,7 @@ class SessaoCaixaViewSet(
             sessao,
             entrada.validated_data["valor_informado"],
             entrada.validated_data.get("observacoes", ""),
+            usuario=request.user,
         )
         return Response(_resumo_serializado(sessao))
 

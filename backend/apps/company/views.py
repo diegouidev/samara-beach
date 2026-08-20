@@ -5,6 +5,8 @@ from rest_framework.generics import RetrieveAPIView, RetrieveUpdateAPIView
 from rest_framework.response import Response
 
 from apps.accounts.models import PapelInterno
+from apps.audit import services as audit_services
+from apps.audit.models import AcaoAuditoria
 from apps.common import documentos
 from apps.common.permissions import IsInternalUser
 
@@ -46,6 +48,21 @@ class EmpresaView(RetrieveUpdateAPIView):
         if self.request.method in ("PUT", "PATCH"):
             return EmpresaUpdateSerializer
         return EmpresaSerializer
+
+    def perform_update(self, serializer):
+        # Dados fiscais mudam raramente e valem para nota e recibo: registrar
+        # quem alterou o quê evita discussão depois.
+        antes = audit_services.snapshot(Empresa.load())
+        super().perform_update(serializer)
+        mudancas = audit_services.diff(antes, audit_services.snapshot(Empresa.load()))
+        if mudancas:
+            audit_services.registrar(
+                request=self.request,
+                acao=AcaoAuditoria.ATUALIZAR,
+                objeto=serializer.instance,
+                descricao=f"Alterou os dados da empresa: {', '.join(sorted(mudancas))}.",
+                dados=mudancas,
+            )
 
 
 class EmpresaPublicaView(RetrieveAPIView):

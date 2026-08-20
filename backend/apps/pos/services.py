@@ -11,6 +11,8 @@ from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from apps.audit import services as audit
+from apps.audit.models import AcaoAuditoria
 from apps.catalog.models import VariacaoProduto
 from apps.inventory.models import MovimentacaoEstoque
 from apps.inventory.views import saldo_atual
@@ -79,6 +81,13 @@ def abrir_caixa(operador, valor_abertura, observacoes: str = "") -> SessaoCaixa:
         usuario=operador,
         motivo="Abertura de caixa (troco inicial).",
     )
+    audit.registrar(
+        usuario=operador,
+        acao=AcaoAuditoria.ABERTURA_CAIXA,
+        objeto=sessao,
+        descricao=f"Abriu o caixa com R$ {valor} de troco inicial.",
+        dados={"valor_abertura": valor},
+    )
     return sessao
 
 
@@ -119,7 +128,7 @@ def registrar_movimento_gaveta(
             )
         montante = -montante
 
-    return MovimentoCaixa.objects.create(
+    movimento = MovimentoCaixa.objects.create(
         sessao=sessao,
         tipo=tipo,
         metodo_pagamento=MetodoPagamento.DINHEIRO,
@@ -127,13 +136,33 @@ def registrar_movimento_gaveta(
         usuario=usuario,
         motivo=motivo.strip(),
     )
+    audit.registrar(
+        usuario=usuario,
+        acao=(
+            AcaoAuditoria.SANGRIA
+            if tipo == TipoMovimentoCaixa.SANGRIA
+            else AcaoAuditoria.SUPRIMENTO
+        ),
+        objeto=movimento,
+        descricao=(
+            f"{movimento.get_tipo_display()} de R$ {abs(montante)}: "
+            f"{motivo.strip()}"
+        ),
+        dados={"valor": montante, "motivo": motivo.strip(), "sessao_id": sessao.id},
+    )
+    return movimento
 
 
 @transaction.atomic
 def fechar_caixa(
-    sessao: SessaoCaixa, valor_informado, observacoes: str = ""
+    sessao: SessaoCaixa, valor_informado, observacoes: str = "", usuario=None
 ) -> SessaoCaixa:
-    """Confere o dinheiro contado contra o esperado e encerra o turno."""
+    """
+    Confere o dinheiro contado contra o esperado e encerra o turno.
+
+    `usuario` é quem está fechando — pode não ser o dono do caixa, já que a
+    view permite que um admin feche o turno de outro operador.
+    """
     _assert_aberta(sessao)
 
     informado = _dec(valor_informado, "valor_informado")
@@ -157,6 +186,25 @@ def fechar_caixa(
             "fechada_em",
             "updated_at",
         ]
+    )
+
+    de_terceiro = bool(usuario and usuario.pk != sessao.operador_id)
+    audit.registrar(
+        usuario=usuario or sessao.operador,
+        acao=AcaoAuditoria.FECHAMENTO_CAIXA,
+        objeto=sessao,
+        descricao=(
+            f"Fechou o caixa de {sessao.operador.nome_exibicao} — "
+            f"diferença de R$ {sessao.diferenca}."
+        ),
+        dados={
+            "informado": sessao.valor_fechamento_informado,
+            "esperado": sessao.valor_fechamento_esperado,
+            "diferenca": sessao.diferenca,
+            "operador_id": sessao.operador_id,
+            # Admin fechando turno alheio: até agora isso não deixava rastro.
+            "fechado_por_terceiro": de_terceiro,
+        },
     )
     return sessao
 
@@ -305,8 +353,28 @@ def registrar_venda(
     # Venda de balcão nasce ENTREGUE: a cliente pagou e saiu com a peça na
     # mão — não há separação nem envio a acompanhar. Como ENTREGUE está em
     # STATUS_COM_BAIXA_ESTOQUE, o estoque é baixado do mesmo jeito.
-    mudar_status(pedido, StatusPedido.ENTREGUE)
+    # auditar=False: a venda em si já vira uma linha na trilha logo abaixo;
+    # registrar também a transição de status duplicaria o mesmo ato.
+    mudar_status(pedido, StatusPedido.ENTREGUE, usuario=operador, auditar=False)
     pedido.refresh_from_db()
+
+    audit.registrar(
+        usuario=operador,
+        acao=AcaoAuditoria.VENDA,
+        objeto=pedido,
+        descricao=(
+            f"Venda de R$ {pedido.total} no PDV "
+            f"({pedido.itens.count()} item(ns))."
+        ),
+        dados={
+            "total": pedido.total,
+            "desconto_manual": pedido.desconto_manual,
+            "sessao_id": sessao.id,
+            "pagamentos": [
+                {"metodo": p["metodo"], "valor": p["valor"]} for p in pagamentos
+            ],
+        },
+    )
     return pedido
 
 
@@ -459,7 +527,7 @@ def cancelar_venda(pedido: Pedido, usuario, motivo: str, sessao=None) -> Pedido:
             "pela tela de trocas e devoluções."
         )
 
-    devolver_estoque(pedido, motivo)
+    devolver_estoque(pedido, motivo, usuario=usuario)
 
     pedido.status = StatusPedido.CANCELADO
     pedido.save(update_fields=["status", "updated_at"])
@@ -481,6 +549,24 @@ def cancelar_venda(pedido: Pedido, usuario, motivo: str, sessao=None) -> Pedido:
                 usuario=usuario,
                 motivo=f"Devolução: {motivo.strip()}",
             )
+
+    # Sempre, mesmo sem caixa aberto: antes, um cancelamento fora do turno
+    # não deixava nenhum rastro de quem o fez.
+    audit.registrar(
+        usuario=usuario,
+        acao=AcaoAuditoria.CANCELAMENTO_VENDA,
+        objeto=pedido,
+        descricao=(
+            f"Cancelou a venda #{str(pedido.id)[:8]} de R$ {pedido.total}: "
+            f"{motivo.strip()}"
+        ),
+        dados={
+            "total": pedido.total,
+            "motivo": motivo.strip(),
+            "estornou_no_caixa": destino is not None,
+            "sessao_id": destino.id if destino else None,
+        },
+    )
     return pedido
 
 
@@ -597,10 +683,27 @@ def registrar_devolucao(
         )
 
     # Devolveu tudo: a venda deixa de existir para efeito de faturamento.
-    if _tudo_devolvido(pedido):
+    tudo_devolvido = _tudo_devolvido(pedido)
+    if tudo_devolvido:
         pedido.status = StatusPedido.CANCELADO
         pedido.save(update_fields=["status", "updated_at"])
 
+    audit.registrar(
+        usuario=usuario,
+        acao=AcaoAuditoria.DEVOLUCAO,
+        objeto=devolucao,
+        descricao=(
+            f"{devolucao.get_tipo_display()} de R$ {devolucao.valor_total} "
+            f"na venda #{str(pedido.id)[:8]}: {motivo.strip()}"
+        ),
+        dados={
+            "tipo": devolucao.tipo,
+            "valor_total": devolucao.valor_total,
+            "motivo": motivo.strip(),
+            "pedido_id": pedido.id,
+            "tudo_devolvido": tudo_devolvido,
+        },
+    )
     return devolucao
 
 
@@ -619,7 +722,7 @@ def _sessao_para_estorno(pedido: Pedido, usuario) -> SessaoCaixa | None:
 
 
 @transaction.atomic
-def devolver_estoque(pedido: Pedido, motivo: str):
+def devolver_estoque(pedido: Pedido, motivo: str, usuario=None):
     """
     Repõe o estoque dos itens do pedido.
 
@@ -642,5 +745,17 @@ def devolver_estoque(pedido: Pedido, motivo: str):
             origem="devolucao",
             quantidade=item.quantidade,
             saldo_resultante=novo_saldo,
+            # `observacoes` intocado de propósito: é ele que a checagem de
+            # reprocessamento acima casa por texto.
             observacoes=f"{marca}. Motivo: {motivo.strip()}",
         )
+
+    audit.registrar(
+        usuario=usuario,
+        acao=AcaoAuditoria.AJUSTE_ESTOQUE,
+        objeto=pedido,
+        descricao=(
+            f"Repôs o estoque do pedido #{str(pedido.id)[:8]}: {motivo.strip()}"
+        ),
+        dados={"pedido_id": pedido.id, "motivo": motivo.strip()},
+    )

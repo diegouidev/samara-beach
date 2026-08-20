@@ -21,7 +21,9 @@ import type {
   Pedido,
   Produto,
   ProdutoResumo,
+  RegistroAuditoria,
   ResultadoPeriodo,
+  ResumoAuditoria,
   ResumoCaixa,
   ResumoContas,
   SessaoCaixa,
@@ -842,4 +844,19 @@ export function reativarUsuario(id: string) {
   return request<UsuarioInterno>(`/api/auth/usuarios/${id}/reativar/`, {
     method: "POST",
   });
+}
+
+// =======================================================================
+// Auditoria (somente leitura)
+// =======================================================================
+
+export function listarAuditoria(params: Record<string, string> = {}) {
+  const qs = new URLSearchParams(params).toString();
+  return request<Paginated<RegistroAuditoria>>(
+    `/api/auditoria/${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export function resumoAuditoria() {
+  return request<ResumoAuditoria>("/api/auditoria/resumo/");
 }

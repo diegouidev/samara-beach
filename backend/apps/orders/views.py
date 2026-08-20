@@ -5,6 +5,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.audit.mixins import AuditoriaMixin
 from apps.accounts.models import PapelInterno
 from apps.common.permissions import HasInternalRole, LojaOnlineRequerida
 from apps.customers.models import Cliente
@@ -23,7 +24,7 @@ from .serializers import (
 ATENDIMENTO_ROLES = [PapelInterno.ATENDIMENTO, PapelInterno.ADMIN]
 
 
-class CupomViewSet(viewsets.ModelViewSet):
+class CupomViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     """Cupons — gestão interna (atendimento/admin)."""
 
     queryset = Cupom.objects.all()
@@ -149,7 +150,9 @@ class PedidoViewSet(viewsets.ModelViewSet):
             raise ValidationError("O carrinho está vazio.")
 
         services.recalcular_totais(pedido)
-        services.mudar_status(pedido, StatusPedido.AGUARDANDO_PAGAMENTO)
+        services.mudar_status(
+            pedido, StatusPedido.AGUARDANDO_PAGAMENTO, usuario=request.user
+        )
         return Response(PedidoSerializer(pedido).data)
 
     @action(detail=True, methods=["post"], url_path="mudar-status")
@@ -165,7 +168,9 @@ class PedidoViewSet(viewsets.ModelViewSet):
         pedido = self.get_object()
         serializer = MudarStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        services.mudar_status(pedido, serializer.validated_data["status"])
+        services.mudar_status(
+            pedido, serializer.validated_data["status"], usuario=request.user
+        )
         return Response(PedidoSerializer(pedido).data)
 
     @staticmethod

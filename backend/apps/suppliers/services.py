@@ -13,6 +13,8 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from apps.audit import services as audit
+from apps.audit.models import AcaoAuditoria
 from apps.common.documentos import (  # noqa: F401  (reexport)
     apenas_digitos,
     cnpj_valido,
@@ -39,7 +41,7 @@ def proximo_vencimento(data: date) -> date:
 
 
 @transaction.atomic
-def marcar_paga(conta, pago_em: date | None = None):
+def marcar_paga(conta, pago_em: date | None = None, usuario=None):
     """
     Baixa a conta e, se for recorrente, já lança a do mês seguinte.
 
@@ -55,6 +57,26 @@ def marcar_paga(conta, pago_em: date | None = None):
     conta.status = StatusContaPagar.PAGA
     conta.pago_em = pago_em or timezone.localdate()
     conta.save(update_fields=["status", "pago_em", "updated_at"])
+
+    # Logo após a baixa, e não em cada return: a função sai por três
+    # caminhos diferentes conforme a recorrência.
+    audit.registrar(
+        usuario=usuario,
+        acao=AcaoAuditoria.PAGAMENTO_CONTA,
+        objeto=conta,
+        descricao=(
+            f"Baixou a conta '{conta.descricao or conta.get_categoria_display()}' "
+            f"de R$ {conta.valor}."
+        ),
+        dados={
+            "valor": conta.valor,
+            "categoria": conta.categoria,
+            "vencimento": conta.vencimento,
+            "pago_em": conta.pago_em,
+            "recorrente": conta.recorrente,
+            "fornecedor_id": conta.fornecedor_id,
+        },
+    )
 
     if not conta.recorrente:
         return conta, None

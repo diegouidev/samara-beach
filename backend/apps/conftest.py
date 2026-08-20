@@ -24,6 +24,17 @@ def admin_user(db):
 
 
 @pytest.fixture
+def atendente_user(db):
+    """Interno sem papel de admin — usado para testar o que é só do admin."""
+    return User.objects.create_user(
+        email="atendente@test.com",
+        password="senha12345",
+        tipo=TipoUsuario.INTERNO,
+        papel=PapelInterno.ATENDIMENTO,
+    )
+
+
+@pytest.fixture
 def cliente_user(db):
     user = User.objects.create_user(
         email="cli@test.com", password="senha12345", tipo=TipoUsuario.CLIENTE

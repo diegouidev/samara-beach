@@ -9,6 +9,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from apps.audit import services as audit
+from apps.audit.models import AcaoAuditoria
 from apps.common.permissions import IsInternalUser
 
 from .models import PapelInterno, TipoUsuario, User
@@ -26,6 +28,23 @@ from .serializers import (
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        resposta = super().post(request, *args, **kwargs)
+        # Chega aqui só com login bem-sucedido — credencial inválida (e loja
+        # desligada para cliente) levanta antes. O id vem do corpo da resposta,
+        # que já traz o usuário serializado.
+        dados_usuario = resposta.data.get("user") or {}
+        usuario = User.objects.filter(pk=dados_usuario.get("id")).first()
+        if usuario is not None:
+            audit.registrar(
+                request=request,
+                usuario=usuario,
+                acao=AcaoAuditoria.LOGIN,
+                objeto=usuario,
+                descricao=f"Entrou no sistema ({usuario.email}).",
+            )
+        return resposta
 
 
 class LogoutView(APIView):
@@ -50,6 +69,12 @@ class LogoutView(APIView):
                 {"detail": "Token inválido ou já expirado."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        audit.registrar(
+            request=request,
+            acao=AcaoAuditoria.LOGOUT,
+            objeto=request.user,
+            descricao=f"Saiu do sistema ({request.user.email}).",
+        )
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
@@ -129,6 +154,57 @@ class UsuarioInternoViewSet(viewsets.ModelViewSet):
             return UsuarioInternoUpdateSerializer
         return UsuarioInternoSerializer
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        criado = serializer.instance
+        audit.registrar(
+            request=self.request,
+            acao=AcaoAuditoria.CRIAR,
+            objeto=criado,
+            descricao=(
+                f"Cadastrou {criado.nome_exibicao} como "
+                f"{criado.get_papel_display()}."
+            ),
+            dados={"email": criado.email, "papel": criado.papel},
+        )
+
+    def perform_update(self, serializer):
+        # Estado anterior lido do banco: a instância do serializer é mutada
+        # in-place pelo save() e não serve de "antes".
+        anterior = User.objects.filter(pk=serializer.instance.pk).first()
+        papel_antes = anterior.papel if anterior else None
+        ativo_antes = anterior.is_active if anterior else None
+
+        super().perform_update(serializer)
+
+        alterado = serializer.instance
+        if papel_antes != alterado.papel:
+            # Escalação de privilégio: o registro mais sensível desta tela.
+            audit.registrar(
+                request=self.request,
+                acao=AcaoAuditoria.MUDANCA_PAPEL,
+                objeto=alterado,
+                descricao=(
+                    f"Alterou o papel de {alterado.nome_exibicao}: "
+                    f"{papel_antes} → {alterado.papel}."
+                ),
+                dados={"papel": {"de": papel_antes, "para": alterado.papel}},
+            )
+        if ativo_antes != alterado.is_active:
+            audit.registrar(
+                request=self.request,
+                acao=(
+                    AcaoAuditoria.REATIVAR_USUARIO
+                    if alterado.is_active
+                    else AcaoAuditoria.DESATIVAR_USUARIO
+                ),
+                objeto=alterado,
+                descricao=(
+                    f"{'Reativou' if alterado.is_active else 'Removeu o acesso de'} "
+                    f"{alterado.nome_exibicao}."
+                ),
+            )
+
     @extend_schema(request=DefinirSenhaSerializer, responses={200: dict})
     @action(detail=True, methods=["post"], url_path="definir-senha")
     def definir_senha(self, request, pk=None):
@@ -140,6 +216,13 @@ class UsuarioInternoViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         usuario.set_password(serializer.validated_data["nova_senha"])
         usuario.save(update_fields=["password", "updated_at"])
+        # A senha em si nunca entra no log — só o fato de ter sido trocada.
+        audit.registrar(
+            request=request,
+            acao=AcaoAuditoria.RESET_SENHA,
+            objeto=usuario,
+            descricao=f"Redefiniu a senha de {usuario.nome_exibicao}.",
+        )
         return Response({"detail": "Senha redefinida."})
 
     @action(detail=True, methods=["post"])
@@ -150,6 +233,12 @@ class UsuarioInternoViewSet(viewsets.ModelViewSet):
             raise ValidationError("Você não pode desativar a própria conta.")
         usuario.is_active = False
         usuario.save(update_fields=["is_active", "updated_at"])
+        audit.registrar(
+            request=request,
+            acao=AcaoAuditoria.DESATIVAR_USUARIO,
+            objeto=usuario,
+            descricao=f"Removeu o acesso de {usuario.nome_exibicao}.",
+        )
         return Response(UsuarioInternoSerializer(usuario).data)
 
     @action(detail=True, methods=["post"])
@@ -157,4 +246,10 @@ class UsuarioInternoViewSet(viewsets.ModelViewSet):
         usuario = self.get_object()
         usuario.is_active = True
         usuario.save(update_fields=["is_active", "updated_at"])
+        audit.registrar(
+            request=request,
+            acao=AcaoAuditoria.REATIVAR_USUARIO,
+            objeto=usuario,
+            descricao=f"Reativou o acesso de {usuario.nome_exibicao}.",
+        )
         return Response(UsuarioInternoSerializer(usuario).data)

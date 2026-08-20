@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import PapelInterno
+from apps.audit.mixins import AuditoriaMixin
 from apps.common.permissions import HasInternalRole, LojaOnlineRequerida
 from apps.orders.models import StatusPedido
 from apps.suppliers.services import consultar_cep
@@ -53,6 +54,7 @@ class MeuPerfilView(APIView):
 
 
 class ClienteAdminViewSet(
+    AuditoriaMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.CreateModelMixin,

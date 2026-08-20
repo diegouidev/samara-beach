@@ -23,6 +23,12 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.
 # relatórios) segue 100% funcional.
 LOJA_ONLINE_ATIVA = env.bool("LOJA_ONLINE_ATIVA", default=True)
 
+# Retenção da trilha de auditoria, por severidade (dias). O crítico segue o
+# prazo prescricional tributário de 5 anos (art. 173 do CTN).
+AUDIT_RETENCAO_INFO_DIAS = env.int("AUDIT_RETENCAO_INFO_DIAS", default=180)
+AUDIT_RETENCAO_ATENCAO_DIAS = env.int("AUDIT_RETENCAO_ATENCAO_DIAS", default=730)
+AUDIT_RETENCAO_CRITICO_DIAS = env.int("AUDIT_RETENCAO_CRITICO_DIAS", default=1825)
+
 # --- Apps ---------------------------------------------------------------
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -56,6 +62,7 @@ LOCAL_APPS = [
     "apps.reports",
     "apps.branding",
     "apps.company",
+    "apps.audit",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

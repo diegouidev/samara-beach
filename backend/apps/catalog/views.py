@@ -4,6 +4,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from apps.accounts.models import PapelInterno
+from apps.audit.mixins import AuditoriaMixin
+from apps.audit.models import AcaoAuditoria
 from apps.common.permissions import (
     LojaOnlineRequerida,
     ReadOnlyOrInternalRole,
@@ -54,7 +56,7 @@ from .serializers import (
 CATALOG_WRITE_ROLES = [PapelInterno.ESTOQUE, PapelInterno.ADMIN]
 
 
-class CategoriaViewSet(viewsets.ModelViewSet):
+class CategoriaViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     queryset = Categoria.objects.select_related("categoria_pai").annotate(
         total_produtos_anotado=Count(
             "produtos", filter=Q(produtos__deleted_at__isnull=True), distinct=True
@@ -79,7 +81,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
-class ProdutoViewSet(viewsets.ModelViewSet):
+class ProdutoViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     queryset = (
         Produto.objects.select_related("categoria")
         .prefetch_related("variacoes__imagens")
@@ -103,7 +105,7 @@ class ProdutoViewSet(viewsets.ModelViewSet):
         return ProdutoSerializer
 
 
-class VariacaoProdutoViewSet(viewsets.ModelViewSet):
+class VariacaoProdutoViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     queryset = VariacaoProduto.objects.select_related("produto").prefetch_related("imagens")
     serializer_class = VariacaoProdutoSerializer
     permission_classes = [LojaOnlineRequerida, ReadOnlyOrInternalRole]
@@ -111,6 +113,18 @@ class VariacaoProdutoViewSet(viewsets.ModelViewSet):
     filterset_fields = ["produto", "cor", "tamanho", "ativo"]
     search_fields = ["sku", "produto__nome"]
     ordering_fields = ["preco", "created_at"]
+
+    # É aqui que o preço muda. Auditamos só o que tem consequência
+    # financeira ou de exposição — descrição e medidas não interessam.
+    audit_acao_update = AcaoAuditoria.ALTERACAO_PRECO
+    audit_campos = [
+        "sku",
+        "preco",
+        "preco_promocional",
+        "custo_medio",
+        "estoque_minimo",
+        "ativo",
+    ]
 
 
 class ImagemProdutoViewSet(viewsets.ModelViewSet):

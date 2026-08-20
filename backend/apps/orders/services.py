@@ -6,6 +6,8 @@ from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
+from apps.audit import services as audit
+from apps.audit.models import AcaoAuditoria
 from apps.inventory.models import MovimentacaoEstoque
 from apps.inventory.views import saldo_atual
 
@@ -91,7 +93,17 @@ def baixar_estoque(pedido: Pedido):
 
 
 @transaction.atomic
-def mudar_status(pedido: Pedido, novo_status: str) -> Pedido:
+def mudar_status(
+    pedido: Pedido, novo_status: str, usuario=None, auditar: bool = True
+) -> Pedido:
+    """
+    Transição de status do pedido.
+
+    `auditar=False` é para quem já registra a operação maior que contém esta
+    transição — hoje, a venda do PDV (ver pos.services.registrar_venda): ela
+    nasce ENTREGUE por construção, e duas linhas na trilha para o mesmo ato
+    seriam ruído.
+    """
     anterior = pedido.status
     pedido.status = novo_status
     pedido.save(update_fields=["status", "updated_at"])
@@ -107,6 +119,25 @@ def mudar_status(pedido: Pedido, novo_status: str) -> Pedido:
         baixar_estoque(pedido)
         if pedido.cupom_id:
             Cupom.objects.filter(pk=pedido.cupom_id).update(usos=F("usos") + 1)
+
+    if auditar:
+        # Dentro da transação, e nunca no on_commit: ali o INSERT sairia numa
+        # transação separada e um rollback deixaria o log órfão.
+        audit.registrar(
+            usuario=usuario,
+            acao=AcaoAuditoria.MUDANCA_STATUS,
+            objeto=pedido,
+            descricao=(
+                f"Pedido #{str(pedido.id)[:8]}: "
+                f"{anterior} → {novo_status}."
+            ),
+            dados={
+                "status": {"de": anterior, "para": novo_status},
+                "baixou_estoque": entrou_em_venda,
+                "canal": pedido.canal,
+                "total": pedido.total,
+            },
+        )
 
     # E-mails transacionais (assíncronos). Import local evita ciclo de import.
     from .tasks import (

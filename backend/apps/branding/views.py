@@ -2,6 +2,8 @@ from rest_framework import parsers, permissions
 from rest_framework.generics import RetrieveUpdateAPIView
 
 from apps.accounts.models import PapelInterno
+from apps.audit import services as audit_services
+from apps.audit.models import AcaoAuditoria
 from apps.common.permissions import IsInternalUser
 
 from .models import Branding
@@ -46,3 +48,20 @@ class BrandingView(RetrieveUpdateAPIView):
 
     def get_serializer_context(self):
         return {"request": self.request}
+
+    def perform_update(self, serializer):
+        antes = audit_services.snapshot(Branding.load())
+        super().perform_update(serializer)
+        mudancas = audit_services.diff(
+            antes, audit_services.snapshot(Branding.load())
+        )
+        if mudancas:
+            audit_services.registrar(
+                request=self.request,
+                acao=AcaoAuditoria.ATUALIZAR,
+                objeto=serializer.instance,
+                descricao=(
+                    f"Alterou a identidade visual: {', '.join(sorted(mudancas))}."
+                ),
+                dados=mudancas,
+            )

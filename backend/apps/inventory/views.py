@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.accounts.models import PapelInterno
+from apps.audit import services as audit
+from apps.audit.models import AcaoAuditoria
 from apps.common.permissions import HasInternalRole
 
 from .models import LoteProducao, MovimentacaoEstoque
@@ -48,6 +50,21 @@ class LoteProducaoViewSet(viewsets.ModelViewSet):
             lote_producao=lote,
             observacoes=f"Entrada automática do lote de produção {lote.id}.",
         )
+        audit.registrar(
+            request=self.request,
+            acao=AcaoAuditoria.AJUSTE_ESTOQUE,
+            objeto=lote,
+            descricao=(
+                f"Registrou lote de {lote.quantidade}x {lote.variacao.sku} "
+                f"(entrada por produção)."
+            ),
+            dados={
+                "variacao": lote.variacao.sku,
+                "quantidade": lote.quantidade,
+                "saldo_resultante": novo_saldo,
+                "custo_unitario": lote.custo_producao_unitario,
+            },
+        )
 
 
 class MovimentacaoEstoqueViewSet(viewsets.ModelViewSet):
@@ -69,8 +86,31 @@ class MovimentacaoEstoqueViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         variacao = serializer.validated_data["variacao"]
         quantidade = serializer.validated_data["quantidade"]
-        novo_saldo = saldo_atual(variacao.id) + quantidade
-        serializer.save(saldo_resultante=novo_saldo)
+        saldo_anterior = saldo_atual(variacao.id)
+        novo_saldo = saldo_anterior + quantidade
+        movimentacao = serializer.save(saldo_resultante=novo_saldo)
+
+        # Entrada e saída manuais são o caminho mais direto para sumiço de
+        # mercadoria — daí o nível crítico na trilha.
+        audit.registrar(
+            request=self.request,
+            acao=AcaoAuditoria.AJUSTE_ESTOQUE,
+            objeto=movimentacao,
+            descricao=(
+                f"{movimentacao.get_tipo_display()} de {abs(quantidade)}x "
+                f"{variacao.sku} ({movimentacao.get_origem_display()}): "
+                f"saldo {saldo_anterior} → {novo_saldo}."
+            ),
+            dados={
+                "variacao": variacao.sku,
+                "tipo": movimentacao.tipo,
+                "origem": movimentacao.origem,
+                "quantidade": quantidade,
+                "saldo_anterior": saldo_anterior,
+                "saldo_resultante": novo_saldo,
+                "observacoes": movimentacao.observacoes,
+            },
+        )
 
     @action(detail=False, methods=["get"], url_path="saldo")
     def saldo(self, request):

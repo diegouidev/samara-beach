@@ -264,3 +264,72 @@ def test_filtro_por_ativo(api, admin_user, estoque_user):
 
     inativos = api.get(url_lista(), {"ativo": "false"}).json()["results"]
     assert estoque_user.email in [u["email"] for u in inativos]
+
+
+# --- Auditoria ------------------------------------------------------------
+
+
+def test_reset_de_senha_gera_auditoria(api, admin_user, estoque_user):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    api.post(
+        f"{url_detalhe(estoque_user)}definir-senha/",
+        {"nova_senha": "outraSenhaBoa456"},
+        format="json",
+    )
+    reg = RegistroAuditoria.objects.filter(acao=AcaoAuditoria.RESET_SENHA).first()
+    assert reg is not None
+    assert reg.usuario == admin_user
+    assert str(estoque_user.pk) == reg.objeto_id
+
+
+def test_senha_nunca_aparece_na_auditoria(api, admin_user, estoque_user):
+    """Teste de segurança: o log não pode virar um vazamento."""
+    from apps.audit.models import RegistroAuditoria
+
+    auth(api, admin_user)
+    api.post(
+        f"{url_detalhe(estoque_user)}definir-senha/",
+        {"nova_senha": "SenhaSuperSecreta789"},
+        format="json",
+    )
+    for reg in RegistroAuditoria.objects.all():
+        serializado = str(reg.dados) + reg.descricao
+        assert "SenhaSuperSecreta789" not in serializado
+        assert "password" not in reg.dados
+
+
+def test_mudanca_de_papel_gera_auditoria_com_diff(api, admin_user, estoque_user):
+    from apps.audit.models import AcaoAuditoria, NivelAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    api.patch(url_detalhe(estoque_user), {"papel": "financeiro"}, format="json")
+
+    reg = RegistroAuditoria.objects.filter(acao=AcaoAuditoria.MUDANCA_PAPEL).first()
+    assert reg is not None
+    assert reg.nivel == NivelAuditoria.CRITICO
+    assert reg.dados["papel"] == {"de": "estoque", "para": "financeiro"}
+
+
+def test_desativar_usuario_gera_auditoria(api, admin_user, estoque_user):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    api.post(f"{url_detalhe(estoque_user)}desativar/")
+    assert RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.DESATIVAR_USUARIO
+    ).exists()
+
+
+def test_login_gera_auditoria(api, admin_user):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+
+    api.post(
+        reverse("accounts:token_obtain_pair"),
+        {"email": admin_user.email, "password": "senha12345"},
+        format="json",
+    )
+    reg = RegistroAuditoria.objects.filter(acao=AcaoAuditoria.LOGIN).first()
+    assert reg is not None
+    assert reg.usuario == admin_user

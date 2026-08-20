@@ -7,6 +7,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.audit.mixins import AuditoriaMixin
 from apps.accounts.models import PapelInterno
 from apps.common.permissions import HasInternalRole
 
@@ -31,7 +32,7 @@ ESTOQUE_ROLES = [PapelInterno.ESTOQUE, PapelInterno.ADMIN]
 FINANCEIRO_ROLES = [PapelInterno.FINANCEIRO, PapelInterno.ADMIN]
 
 
-class FornecedorViewSet(viewsets.ModelViewSet):
+class FornecedorViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     """Fornecedores — dados internos, sem leitura pública."""
 
     queryset = Fornecedor.objects.all()
@@ -82,7 +83,7 @@ class ItemPedidoCompraViewSet(viewsets.ModelViewSet):
     filterset_fields = ["pedido_compra", "variacao"]
 
 
-class ContaPagarViewSet(viewsets.ModelViewSet):
+class ContaPagarViewSet(AuditoriaMixin, viewsets.ModelViewSet):
     """
     Contas a pagar — restrito a financeiro/admin.
 
@@ -109,7 +110,9 @@ class ContaPagarViewSet(viewsets.ModelViewSet):
         entrada.is_valid(raise_exception=True)
 
         conta, proxima = services.marcar_paga(
-            self.get_object(), entrada.validated_data.get("pago_em")
+            self.get_object(),
+            entrada.validated_data.get("pago_em"),
+            usuario=request.user,
         )
         return Response(
             {

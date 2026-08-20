@@ -132,6 +132,13 @@ export const IconeMargem = (p: Props) => (
   </Base>
 );
 
+export const IconeAuditoria = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 3 4 6v5.5c0 4.5 3.2 8.2 8 9.5 4.8-1.3 8-5 8-9.5V6l-8-3Z" />
+    <path d="m9 12 2 2 4-4" />
+  </Base>
+);
+
 export const IconeEquipe = (p: Props) => (
   <Base {...p}>
     <path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20" />

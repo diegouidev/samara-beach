@@ -652,3 +652,36 @@ export interface MargemLinha {
   margem_percentual: string;
   custo_incompleto: boolean;
 }
+
+// --- Auditoria ------------------------------------------------------------
+
+export type NivelAuditoria = "info" | "atencao" | "critico";
+
+/** Uma linha da trilha de auditoria (somente leitura). */
+export interface RegistroAuditoria {
+  id: string;
+  created_at: string;
+  usuario: string | null;
+  usuario_email: string;
+  usuario_nome: string;
+  usuario_papel: string;
+  acao: string;
+  acao_label: string;
+  nivel: NivelAuditoria;
+  nivel_label: string;
+  app_label: string;
+  model_name: string;
+  objeto_id: string;
+  objeto_repr: string;
+  descricao: string;
+  /** Diff {campo: {de, para}} ou payload da ação de negócio. */
+  dados: Record<string, unknown>;
+  ip: string | null;
+}
+
+export interface ResumoAuditoria {
+  acoes_hoje: number;
+  criticas_semana: number;
+  usuarios_hoje: number;
+  por_nivel: { nivel: NivelAuditoria; total: number }[];
+}

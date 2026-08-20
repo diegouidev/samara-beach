@@ -98,3 +98,62 @@ def test_nao_edita_pedido_fora_do_carrinho(api, cliente_user, admin_user, variac
     auth(api, cliente_user)
     resp = _add_item(api, pedido["id"], variacao.id, 1)
     assert resp.status_code == 400
+
+
+# --- Auditoria ------------------------------------------------------------
+
+
+def test_auditoria_nao_quebra_idempotencia_da_baixa_de_estoque(
+    admin_user, cliente_user, variacao
+):
+    """
+    Regressão: a detecção de reprocessamento em `baixar_estoque` casa texto
+    em `MovimentacaoEstoque.observacoes`. A auditoria vive em tabela própria
+    justamente para não interferir nisso — se interferisse, o estoque seria
+    baixado duas vezes.
+    """
+    from apps.customers.models import Cliente
+    from apps.inventory.models import MovimentacaoEstoque
+    from apps.orders.models import ItemPedido, Pedido, StatusPedido
+    from apps.orders import services
+
+    pedido = Pedido.objects.create(
+        cliente=Cliente.objects.get(usuario=cliente_user),
+        status=StatusPedido.AGUARDANDO_PAGAMENTO,
+    )
+    ItemPedido.objects.create(
+        pedido=pedido, variacao=variacao, quantidade=2, preco_unitario="100.00"
+    )
+
+    services.mudar_status(pedido, StatusPedido.PAGO, usuario=admin_user)
+    baixas = MovimentacaoEstoque.objects.filter(origem="venda").count()
+
+    services.mudar_status(pedido, StatusPedido.EM_SEPARACAO, usuario=admin_user)
+    services.mudar_status(pedido, StatusPedido.ENVIADO, usuario=admin_user)
+    services.mudar_status(pedido, StatusPedido.ENTREGUE, usuario=admin_user)
+
+    assert MovimentacaoEstoque.objects.filter(origem="venda").count() == baixas
+
+
+def test_mudanca_de_status_registra_quem_fez(admin_user, cliente_user, variacao):
+    from apps.audit.models import AcaoAuditoria, RegistroAuditoria
+    from apps.customers.models import Cliente
+    from apps.orders.models import ItemPedido, Pedido, StatusPedido
+    from apps.orders import services
+
+    pedido = Pedido.objects.create(
+        cliente=Cliente.objects.get(usuario=cliente_user),
+        status=StatusPedido.AGUARDANDO_PAGAMENTO,
+    )
+    ItemPedido.objects.create(
+        pedido=pedido, variacao=variacao, quantidade=1, preco_unitario="100.00"
+    )
+
+    services.mudar_status(pedido, StatusPedido.PAGO, usuario=admin_user)
+
+    reg = RegistroAuditoria.objects.filter(
+        acao=AcaoAuditoria.MUDANCA_STATUS
+    ).first()
+    assert reg.usuario == admin_user
+    assert reg.dados["status"]["para"] == StatusPedido.PAGO
+    assert reg.dados["baixou_estoque"] is True

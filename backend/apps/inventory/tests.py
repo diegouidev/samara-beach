@@ -36,3 +36,31 @@ def test_estoque_restrito_a_interno(api, cliente_user, variacao):
     auth(api, cliente_user)
     resp = api.get("/api/movimentacoes/estoque-baixo/")
     assert resp.status_code == 403
+
+
+# --- Auditoria ------------------------------------------------------------
+
+
+def test_ajuste_de_estoque_gera_auditoria_critica(api, admin_user, variacao):
+    """Ajuste manual é o caminho mais direto para sumiço de mercadoria."""
+    from apps.audit.models import AcaoAuditoria, NivelAuditoria, RegistroAuditoria
+
+    auth(api, admin_user)
+    api.post(
+        "/api/movimentacoes/",
+        {
+            "variacao": str(variacao.id),
+            "tipo": "saida",
+            "origem": "ajuste",
+            "quantidade": -3,
+            "observacoes": "Peça danificada",
+        },
+        format="json",
+    )
+
+    reg = RegistroAuditoria.objects.filter(acao=AcaoAuditoria.AJUSTE_ESTOQUE).first()
+    assert reg is not None
+    assert reg.usuario == admin_user
+    assert reg.nivel == NivelAuditoria.CRITICO
+    assert reg.dados["quantidade"] == -3
+    assert reg.dados["variacao"] == variacao.sku
